@@ -36,9 +36,19 @@ type createEntityInput struct {
 	Payload map[string]any `json:"payload" jsonschema:"JSON payload exactly as required by the Lexware API"`
 }
 
+type createSimpleContactInput struct {
+	Name            string `json:"name" jsonschema:"Display name used as the contact last name in the simple contact helper"`
+	SourceReference string `json:"sourceReference,omitempty" jsonschema:"Optional source reference stored in the contact note, for example an order id"`
+}
+
 type updateEntityInput struct {
 	ID      string         `json:"id" jsonschema:"UUID of the Lexware resource"`
 	Payload map[string]any `json:"payload" jsonschema:"Full JSON payload including version when required by Lexware"`
+}
+
+type createInvoiceInput struct {
+	Invoice  lexware.Invoice `json:"invoice" jsonschema:"Invoice payload based on the legacy project structure"`
+	Finalize *bool           `json:"finalize,omitempty" jsonschema:"Optional override for Lexware invoice finalization"`
 }
 
 func New(client *lexware.Client) *mcp.Server {
@@ -78,6 +88,11 @@ func (s *Server) registerTools() {
 	}, s.createContact)
 
 	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_create_simple_contact",
+		Description: "Create a simple customer contact using the legacy integration shape.",
+	}, s.createSimpleContact)
+
+	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_update_contact",
 		Description: "Update a contact by id with a raw Lexware JSON payload.",
 	}, s.updateContact)
@@ -96,6 +111,11 @@ func (s *Server) registerTools() {
 		Name:        "lexware_get_invoice",
 		Description: "Fetch a single invoice by id.",
 	}, s.getInvoice)
+
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_create_invoice",
+		Description: "Create an invoice using the legacy integration invoice shape and an optional finalize flag.",
+	}, s.createInvoice)
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_list_vouchers",
@@ -129,6 +149,15 @@ func (s *Server) createContact(ctx context.Context, _ *mcp.CallToolRequest, inpu
 	return s.do(ctx, lexware.Request{Method: "POST", Path: "/v1/contacts", Body: input.Payload})
 }
 
+func (s *Server) createSimpleContact(ctx context.Context, _ *mcp.CallToolRequest, input createSimpleContactInput) (*mcp.CallToolResult, map[string]any, error) {
+	if strings.TrimSpace(input.Name) == "" {
+		return nil, nil, fmt.Errorf("name is required")
+	}
+
+	result, resp, err := s.client.CreateSimpleContact(ctx, input.Name, input.SourceReference)
+	return s.workflowResult("create contact", result, resp, err)
+}
+
 func (s *Server) updateContact(ctx context.Context, _ *mcp.CallToolRequest, input updateEntityInput) (*mcp.CallToolResult, map[string]any, error) {
 	id, err := requireID(input.ID)
 	if err != nil {
@@ -156,6 +185,11 @@ func (s *Server) getInvoice(ctx context.Context, _ *mcp.CallToolRequest, input e
 		return nil, nil, err
 	}
 	return s.do(ctx, lexware.Request{Method: "GET", Path: "/v1/invoices/" + id})
+}
+
+func (s *Server) createInvoice(ctx context.Context, _ *mcp.CallToolRequest, input createInvoiceInput) (*mcp.CallToolResult, map[string]any, error) {
+	result, resp, err := s.client.CreateInvoice(ctx, input.Invoice, input.Finalize)
+	return s.workflowResult("create invoice", result, resp, err)
 }
 
 func (s *Server) listVouchers(ctx context.Context, _ *mcp.CallToolRequest, input pageInput) (*mcp.CallToolResult, map[string]any, error) {
@@ -219,6 +253,37 @@ func pagingQuery(page int) map[string]string {
 		return nil
 	}
 	return map[string]string{"page": fmt.Sprintf("%d", page)}
+}
+
+func (s *Server) workflowResult(action string, result any, resp *lexware.Response, err error) (*mcp.CallToolResult, map[string]any, error) {
+	payload := map[string]any{
+		"result": result,
+	}
+	if resp != nil {
+		payload["response"] = map[string]any{
+			"statusCode":  resp.StatusCode,
+			"contentType": resp.ContentType,
+			"headers":     resp.Headers,
+			"body":        resp.Body,
+			"bodyText":    resp.BodyText,
+			"bodyBase64":  resp.BodyBase64,
+		}
+	}
+
+	if err != nil {
+		text := fmt.Sprintf("Lexware %s failed", action)
+		if b, marshalErr := json.MarshalIndent(payload, "", "  "); marshalErr == nil {
+			text += "\n" + string(b)
+		}
+		return &mcp.CallToolResult{
+			IsError: true,
+			Content: []mcp.Content{
+				&mcp.TextContent{Text: text},
+			},
+		}, payload, nil
+	}
+
+	return nil, payload, nil
 }
 
 func requireID(id string) (string, error) {

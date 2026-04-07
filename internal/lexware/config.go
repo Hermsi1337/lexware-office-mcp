@@ -15,11 +15,12 @@ const (
 )
 
 type Config struct {
-	APIToken    string
-	BaseURL     string
-	UserAgent   string
-	MinInterval time.Duration
-	HTTPTimeout time.Duration
+	APIToken         string
+	BaseURL          string
+	UserAgent        string
+	MinInterval      time.Duration
+	HTTPTimeout      time.Duration
+	FinalizeInvoices bool
 }
 
 func LoadConfigFromEnv() (Config, error) {
@@ -48,10 +49,25 @@ func LoadConfigFromEnv() (Config, error) {
 	}
 
 	return Config{
-		APIToken:    token,
-		BaseURL:     strings.TrimRight(baseURL, "/"),
-		UserAgent:   userAgent,
-		MinInterval: minInterval,
-		HTTPTimeout: 30 * time.Second,
+		APIToken:         token,
+		BaseURL:          strings.TrimRight(baseURL, "/"),
+		UserAgent:        userAgent,
+		MinInterval:      minInterval,
+		HTTPTimeout:      30 * time.Second,
+		FinalizeInvoices: parseBoolEnv("LEXWARE_FINALIZE_INVOICES", false),
 	}, nil
+}
+
+func parseBoolEnv(key string, fallback bool) bool {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return fallback
+	}
+
+	value, err := strconv.ParseBool(raw)
+	if err != nil {
+		return fallback
+	}
+
+	return value
 }

@@ -17,11 +17,12 @@ import (
 )
 
 type Client struct {
-	baseURL     string
-	apiToken    string
-	userAgent   string
-	httpClient  *http.Client
-	minInterval time.Duration
+	baseURL          string
+	apiToken         string
+	userAgent        string
+	httpClient       *http.Client
+	minInterval      time.Duration
+	finalizeInvoices bool
 
 	mu          sync.Mutex
 	lastRequest time.Time
@@ -46,10 +47,11 @@ type Response struct {
 
 func NewClient(cfg Config) *Client {
 	return &Client{
-		baseURL:     cfg.BaseURL,
-		apiToken:    cfg.APIToken,
-		userAgent:   cfg.UserAgent,
-		minInterval: cfg.MinInterval,
+		baseURL:          cfg.BaseURL,
+		apiToken:         cfg.APIToken,
+		userAgent:        cfg.UserAgent,
+		minInterval:      cfg.MinInterval,
+		finalizeInvoices: cfg.FinalizeInvoices,
 		httpClient: &http.Client{
 			Timeout: cfg.HTTPTimeout,
 		},
@@ -186,4 +188,8 @@ func decodeResponse(httpResp *http.Response) (*Response, error) {
 	}
 
 	return resp, nil
+}
+
+func (c *Client) FinalizeInvoices() bool {
+	return c.finalizeInvoices
 }

@@ -59,10 +59,12 @@ The repository currently exposes these MCP tools:
 - `lexware_list_contacts`
 - `lexware_get_contact`
 - `lexware_create_contact`
+- `lexware_create_simple_contact`
 - `lexware_update_contact`
 - `lexware_list_articles`
 - `lexware_get_article`
 - `lexware_get_invoice`
+- `lexware_create_invoice`
 - `lexware_list_vouchers`
 - `lexware_api_request`
 
