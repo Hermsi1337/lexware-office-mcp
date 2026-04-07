@@ -9,16 +9,14 @@ import (
 )
 
 const (
-	defaultBaseURL     = "https://api.lexware.io"
-	defaultUserAgent   = "lexware-office-mcp/0.1.0"
-	defaultMinInterval = 550 * time.Millisecond
+	defaultBaseURL   = "https://api.lexware.io"
+	defaultUserAgent = "lexware-office-mcp/0.1.0"
 )
 
 type Config struct {
 	APIToken         string
 	BaseURL          string
 	UserAgent        string
-	MinInterval      time.Duration
 	HTTPTimeout      time.Duration
 	FinalizeInvoices bool
 }
@@ -39,20 +37,10 @@ func LoadConfigFromEnv() (Config, error) {
 		userAgent = defaultUserAgent
 	}
 
-	minInterval := defaultMinInterval
-	if raw := strings.TrimSpace(os.Getenv("LEXWARE_MIN_INTERVAL_MS")); raw != "" {
-		ms, err := strconv.Atoi(raw)
-		if err != nil || ms < 0 {
-			return Config{}, fmt.Errorf("LEXWARE_MIN_INTERVAL_MS must be a non-negative integer")
-		}
-		minInterval = time.Duration(ms) * time.Millisecond
-	}
-
 	return Config{
 		APIToken:         token,
 		BaseURL:          strings.TrimRight(baseURL, "/"),
 		UserAgent:        userAgent,
-		MinInterval:      minInterval,
 		HTTPTimeout:      30 * time.Second,
 		FinalizeInvoices: parseBoolEnv("LEXWARE_FINALIZE_INVOICES", false),
 	}, nil

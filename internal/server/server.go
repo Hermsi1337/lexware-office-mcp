@@ -129,7 +129,8 @@ func (s *Server) registerTools() {
 }
 
 func (s *Server) getProfile(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {
-	return s.do(ctx, lexware.Request{Method: "GET", Path: "/v1/profile"})
+	result, resp, err := s.client.GetProfile(ctx)
+	return s.workflowResult("get profile", result, resp, err)
 }
 
 func (s *Server) listContacts(ctx context.Context, _ *mcp.CallToolRequest, input pageInput) (*mcp.CallToolResult, map[string]any, error) {

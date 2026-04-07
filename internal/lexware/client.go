@@ -8,22 +8,14 @@ import (
 	"mime"
 	"net/http"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-resty/resty/v2"
 )
 
 type Client struct {
-	baseURL          string
-	apiToken         string
-	userAgent        string
 	restClient       *resty.Client
-	minInterval      time.Duration
 	finalizeInvoices bool
-
-	mu          sync.Mutex
-	lastRequest time.Time
 }
 
 type Request struct {
@@ -59,11 +51,7 @@ func NewClient(cfg Config) *Client {
 		})
 
 	return &Client{
-		baseURL:          cfg.BaseURL,
-		apiToken:         cfg.APIToken,
-		userAgent:        cfg.UserAgent,
 		restClient:       restClient,
-		minInterval:      cfg.MinInterval,
 		finalizeInvoices: cfg.FinalizeInvoices,
 	}
 }
@@ -72,10 +60,6 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 	method := strings.ToUpper(strings.TrimSpace(req.Method))
 	if method == "" {
 		method = http.MethodGet
-	}
-
-	if err := c.waitTurn(ctx); err != nil {
-		return nil, err
 	}
 
 	restReq := c.restClient.R().SetContext(ctx)
@@ -107,33 +91,6 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 	}
 
 	return resp, nil
-}
-
-func (c *Client) waitTurn(ctx context.Context) error {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if c.minInterval <= 0 {
-		c.lastRequest = time.Now()
-		return nil
-	}
-
-	if !c.lastRequest.IsZero() {
-		wait := c.lastRequest.Add(c.minInterval).Sub(time.Now())
-		if wait > 0 {
-			timer := time.NewTimer(wait)
-			defer timer.Stop()
-
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-timer.C:
-			}
-		}
-	}
-
-	c.lastRequest = time.Now()
-	return nil
 }
 
 func decodeResponse(httpResp *http.Response, body []byte) (*Response, error) {

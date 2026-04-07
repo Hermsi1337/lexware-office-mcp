@@ -2,6 +2,8 @@ package lexware
 
 import (
 	"context"
+	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -12,6 +14,27 @@ type CreateContactResult struct {
 
 type CreateInvoiceResult struct {
 	ID string `json:"id"`
+}
+
+func (c *Client) GetProfile(ctx context.Context) (*Profile, *Response, error) {
+	result := &Profile{}
+	resp, err := c.restClient.R().
+		SetContext(ctx).
+		SetResult(result).
+		Get("/v1/profile")
+	if err != nil {
+		return nil, nil, fmt.Errorf("send request: %w", err)
+	}
+
+	rawResp, decodeErr := decodeResponse(resp.RawResponse, resp.Body())
+	if decodeErr != nil {
+		return nil, nil, decodeErr
+	}
+	if resp.StatusCode() >= http.StatusBadRequest {
+		return nil, rawResp, fmt.Errorf("lexware api returned status %d", resp.StatusCode())
+	}
+
+	return result, rawResp, nil
 }
 
 func (c *Client) CreateSimpleContact(ctx context.Context, name, sourceReference string) (*CreateContactResult, *Response, error) {
@@ -28,46 +51,48 @@ func (c *Client) CreateSimpleContact(ctx context.Context, name, sourceReference 
 		contact.Note = sourceReference
 	}
 
-	resp, err := c.Do(ctx, Request{
-		Method: "POST",
-		Path:   "/v1/contacts",
-		Body:   contact,
-	})
-	if err != nil && resp == nil {
-		return nil, nil, err
-	}
-
 	result := &CreateContactResult{}
-	if resp != nil && resp.Body != nil {
-		if id, ok := extractID(resp.Body); ok {
-			result.ID = id
-		}
+	resp, err := c.restClient.R().
+		SetContext(ctx).
+		SetBody(contact).
+		SetResult(result).
+		Post("/v1/contacts")
+	if err != nil {
+		return nil, nil, fmt.Errorf("send request: %w", err)
 	}
 
-	return result, resp, err
+	rawResp, decodeErr := decodeResponse(resp.RawResponse, resp.Body())
+	if decodeErr != nil {
+		return nil, nil, decodeErr
+	}
+	if resp.StatusCode() >= http.StatusBadRequest {
+		return result, rawResp, fmt.Errorf("lexware api returned status %d", resp.StatusCode())
+	}
+
+	return result, rawResp, nil
 }
 
 func (c *Client) CreateInvoice(ctx context.Context, invoice Invoice, finalize *bool) (*CreateInvoiceResult, *Response, error) {
-	resp, err := c.Do(ctx, Request{
-		Method: "POST",
-		Path:   "/v1/invoices",
-		Query: map[string]string{
-			"finalize": strconv.FormatBool(c.resolveFinalize(finalize)),
-		},
-		Body: invoice,
-	})
-	if err != nil && resp == nil {
+	result := &CreateInvoiceResult{}
+	resp, err := c.restClient.R().
+		SetContext(ctx).
+		SetBody(invoice).
+		SetResult(result).
+		SetQueryParam("finalize", strconv.FormatBool(c.resolveFinalize(finalize))).
+		Post("/v1/invoices")
+	if err != nil {
 		return nil, nil, err
 	}
 
-	result := &CreateInvoiceResult{}
-	if resp != nil && resp.Body != nil {
-		if id, ok := extractID(resp.Body); ok {
-			result.ID = id
-		}
+	rawResp, decodeErr := decodeResponse(resp.RawResponse, resp.Body())
+	if decodeErr != nil {
+		return nil, nil, decodeErr
+	}
+	if resp.StatusCode() >= http.StatusBadRequest {
+		return result, rawResp, fmt.Errorf("lexware api returned status %d", resp.StatusCode())
 	}
 
-	return result, resp, err
+	return result, rawResp, nil
 }
 
 func (c *Client) resolveFinalize(value *bool) bool {
@@ -75,19 +100,4 @@ func (c *Client) resolveFinalize(value *bool) bool {
 		return *value
 	}
 	return c.finalizeInvoices
-}
-
-func extractID(body any) (string, bool) {
-	asMap, ok := body.(map[string]any)
-	if !ok {
-		return "", false
-	}
-
-	rawID, ok := asMap["id"]
-	if !ok {
-		return "", false
-	}
-
-	id, ok := rawID.(string)
-	return id, ok && strings.TrimSpace(id) != ""
 }

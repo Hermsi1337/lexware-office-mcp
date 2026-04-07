@@ -48,7 +48,7 @@ If the code changes behavior, setup, scope, supported tools, constraints, or con
 
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
 - `internal/lexware/config.go`: environment-based configuration loading
-- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with explicit pacing, 429 retry handling, and response decoding
+- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling and shared raw-response decoding for MCP passthrough/error reporting
 - `internal/server/server.go`: MCP server setup and tool registration
 
 ## Current MVP Tool Surface

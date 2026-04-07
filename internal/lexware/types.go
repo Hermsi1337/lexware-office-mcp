@@ -9,6 +9,10 @@ type Contact struct {
 	Note    string `json:"note,omitempty"`
 }
 
+type Profile struct {
+	OrganizationID string `json:"organizationId"`
+}
+
 type Person struct {
 	Salutation string `json:"salutation,omitempty"`
 	FirstName  string `json:"firstName,omitempty"`

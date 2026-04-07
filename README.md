@@ -26,6 +26,7 @@ The repository also includes an initial set of typed workflow coverage:
 - invoice creation with the `finalize` query parameter
 
 Internally, the Lexware HTTP client uses `resty` with conservative local pacing plus automatic retries for HTTP `429` responses.
+Internally, the typed workflows use `resty` result structs directly. Generic response decoding remains only for the raw passthrough tool and for returning structured diagnostics to MCP callers.
 
 ## Requirements
 
@@ -45,10 +46,7 @@ Important environment variables:
 - `LEXWARE_API_TOKEN`: required
 - `LEXWARE_BASE_URL`: defaults to `https://api.lexware.io`
 - `LEXWARE_USER_AGENT`: optional, defaults to `lexware-office-mcp/0.1.0`
-- `LEXWARE_MIN_INTERVAL_MS`: optional, defaults to `550`
 - `LEXWARE_FINALIZE_INVOICES`: optional, defaults to `false`
-
-The default request interval is intentionally conservative because the official Lexware documentation currently states a limit of `2 requests per second`.
 
 ## Running
 
