@@ -4,6 +4,10 @@
 
 This repository contains a Go-based MCP server for the Lexware Office public API. The project goal is to provide a maintainable, extensible bridge between MCP clients and Lexware resources such as contacts, articles, invoices, vouchers, files, and related accounting workflows.
 
+Primary external reference:
+
+- Lexware API documentation: https://developers.lexware.io/docs/
+
 ## Mandatory Repository Language
 
 All repository-facing content must be written in English.
