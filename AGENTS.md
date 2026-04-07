@@ -31,7 +31,7 @@ User prompts may be in German or another language, but the repository output mus
 - Prefer small, composable changes over broad rewrites.
 - Keep the server usable as an MVP even while dedicated endpoint wrappers are still incomplete.
 - Favor typed MCP tools where the schema is stable and valuable.
-- It is acceptable to use a raw passthrough tool for Lexware endpoints that have not yet been modeled with dedicated Go types.
+- Do not add generic raw passthrough MCP tools. This repository should expose typed requests and typed responses only.
 - Respect Lexware API limits and keep rate limiting or retry behavior explicit in code.
 - Prefer official Lexware API behavior over assumptions; verify unclear details against the official documentation.
 
@@ -48,7 +48,7 @@ If the code changes behavior, setup, scope, supported tools, constraints, or con
 
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
 - `internal/lexware/config.go`: environment-based configuration loading
-- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling and shared raw-response decoding for MCP passthrough/error reporting
+- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling
 - `internal/server/server.go`: MCP server setup and tool registration
 
 ## Current MVP Tool Surface
@@ -56,17 +56,8 @@ If the code changes behavior, setup, scope, supported tools, constraints, or con
 The repository currently exposes these MCP tools:
 
 - `lexware_get_profile`
-- `lexware_list_contacts`
-- `lexware_get_contact`
-- `lexware_create_contact`
 - `lexware_create_simple_contact`
-- `lexware_update_contact`
-- `lexware_list_articles`
-- `lexware_get_article`
-- `lexware_get_invoice`
 - `lexware_create_invoice`
-- `lexware_list_vouchers`
-- `lexware_api_request`
 
 When adding or removing tools, update `README.md` and this file before committing.
 

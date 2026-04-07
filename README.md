@@ -5,19 +5,8 @@ A lightweight MCP server in Go for the [Lexware Office / Lexware API](https://de
 The server uses `stdio`, authenticates with a private Lexware API token, and currently ships with a practical MVP toolset:
 
 - `lexware_get_profile`
-- `lexware_list_contacts`
-- `lexware_get_contact`
-- `lexware_create_contact`
 - `lexware_create_simple_contact`
-- `lexware_update_contact`
-- `lexware_list_articles`
-- `lexware_get_article`
-- `lexware_get_invoice`
 - `lexware_create_invoice`
-- `lexware_list_vouchers`
-- `lexware_api_request`
-
-The generic `lexware_api_request` tool is intentionally included so the server remains useful before every Lexware endpoint has a dedicated typed wrapper.
 
 The repository also includes an initial set of typed workflow coverage:
 
@@ -25,8 +14,7 @@ The repository also includes an initial set of typed workflow coverage:
 - simple contact creation
 - invoice creation with the `finalize` query parameter
 
-Internally, the Lexware HTTP client uses `resty` with conservative local pacing plus automatic retries for HTTP `429` responses.
-Internally, the typed workflows use `resty` result structs directly. Generic response decoding remains only for the raw passthrough tool and for returning structured diagnostics to MCP callers.
+Internally, the Lexware HTTP client uses `resty` with automatic retries for HTTP `429` responses. The MCP intentionally exposes only typed tools with typed request and response models.
 
 ## Requirements
 
@@ -82,38 +70,6 @@ Fetch the current profile:
 {
   "name": "lexware_get_profile",
   "arguments": {}
-}
-```
-
-Create a contact:
-
-```json
-{
-  "name": "lexware_create_contact",
-  "arguments": {
-    "payload": {
-      "version": 0,
-      "roles": {
-        "customer": {}
-      },
-      "person": {
-        "firstName": "Inge",
-        "lastName": "Musterfrau"
-      }
-    }
-  }
-}
-```
-
-Call any Lexware endpoint:
-
-```json
-{
-  "name": "lexware_api_request",
-  "arguments": {
-    "method": "GET",
-    "path": "/v1/countries"
-  }
 }
 ```
 
@@ -178,8 +134,7 @@ Create an invoice using the legacy integration shape:
 
 ## Next Useful Extensions
 
-- Dedicated tools for `invoices`, `vouchers`, `files`, and `event subscriptions`
-- Better endpoint-specific input schemas instead of generic payload maps
+- Add more typed tools for `contacts`, `articles`, `invoices`, `vouchers`, `files`, and `event subscriptions`
 - Optional OAuth or multi-tenant support if the project later needs to connect multiple Lexware accounts
 
 ## Sources

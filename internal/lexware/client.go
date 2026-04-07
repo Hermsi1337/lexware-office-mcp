@@ -2,10 +2,7 @@ package lexware
 
 import (
 	"context"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"mime"
 	"net/http"
 	"strings"
 	"time"
@@ -16,23 +13,6 @@ import (
 type Client struct {
 	restClient       *resty.Client
 	finalizeInvoices bool
-}
-
-type Request struct {
-	Method string
-	Path   string
-	Query  map[string]string
-	Body   any
-	Accept string
-}
-
-type Response struct {
-	StatusCode  int               `json:"statusCode"`
-	ContentType string            `json:"contentType"`
-	Headers     map[string]string `json:"headers"`
-	Body        any               `json:"body,omitempty"`
-	BodyText    string            `json:"bodyText,omitempty"`
-	BodyBase64  string            `json:"bodyBase64,omitempty"`
 }
 
 func NewClient(cfg Config) *Client {
@@ -56,79 +36,29 @@ func NewClient(cfg Config) *Client {
 	}
 }
 
-func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
-	method := strings.ToUpper(strings.TrimSpace(req.Method))
-	if method == "" {
-		method = http.MethodGet
-	}
-
-	restReq := c.restClient.R().SetContext(ctx)
-	if req.Body != nil {
-		restReq.SetBody(req.Body)
-	}
-	if strings.TrimSpace(req.Accept) != "" {
-		restReq.SetHeader("Accept", req.Accept)
-	}
-	for key, value := range req.Query {
-		if strings.TrimSpace(key) == "" {
-			continue
-		}
-		restReq.SetQueryParam(key, value)
-	}
-
-	restResp, err := restReq.Execute(method, req.Path)
+func wrapAPIError(action string, resp *resty.Response, err error) error {
 	if err != nil {
-		return nil, fmt.Errorf("send request: %w", err)
+		return fmt.Errorf("%s request failed: %w", action, err)
+	}
+	if resp == nil {
+		return fmt.Errorf("%s failed without a response", action)
+	}
+	if resp.StatusCode() < http.StatusBadRequest {
+		return nil
 	}
 
-	resp, err := decodeResponse(restResp.RawResponse, restResp.Body())
-	if err != nil {
-		return nil, err
+	body := strings.TrimSpace(resp.String())
+	if body == "" {
+		return fmt.Errorf("%s failed with status %d", action, resp.StatusCode())
 	}
 
-	if restResp.StatusCode() >= 400 {
-		return resp, fmt.Errorf("lexware api returned status %d", restResp.StatusCode())
-	}
-
-	return resp, nil
-}
-
-func decodeResponse(httpResp *http.Response, body []byte) (*Response, error) {
-	if httpResp == nil {
-		return nil, fmt.Errorf("missing http response")
-	}
-
-	resp := &Response{
-		StatusCode:  httpResp.StatusCode,
-		ContentType: httpResp.Header.Get("Content-Type"),
-		Headers:     map[string]string{},
-	}
-	for key, values := range httpResp.Header {
-		resp.Headers[key] = strings.Join(values, ", ")
-	}
-
-	if len(body) == 0 {
-		return resp, nil
-	}
-
-	mediaType, _, _ := mime.ParseMediaType(resp.ContentType)
-	switch {
-	case strings.Contains(mediaType, "json") || json.Valid(body):
-		var parsed any
-		if err := json.Unmarshal(body, &parsed); err != nil {
-			resp.BodyText = string(body)
-			return resp, nil
-		}
-		resp.Body = parsed
-	case strings.HasPrefix(mediaType, "text/"):
-		resp.BodyText = string(body)
-	default:
-		resp.BodyBase64 = base64.StdEncoding.EncodeToString(body)
-	}
-
-	return resp, nil
+	return fmt.Errorf("%s failed with status %d: %s", action, resp.StatusCode(), body)
 }
 
 func (c *Client) FinalizeInvoices() bool {
 	return c.finalizeInvoices
+}
+
+func (c *Client) newRequest(ctx context.Context) *resty.Request {
+	return c.restClient.R().SetContext(ctx)
 }
