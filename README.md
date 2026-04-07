@@ -19,7 +19,7 @@ The server uses `stdio`, authenticates with a private Lexware API token, and cur
 
 The generic `lexware_api_request` tool is intentionally included so the server remains useful before every Lexware endpoint has a dedicated typed wrapper.
 
-The repository also includes the minimum endpoint coverage from the older `snorbill-backend` Lexoffice integration:
+The repository also includes an initial set of typed workflow coverage:
 
 - profile retrieval
 - simple contact creation
