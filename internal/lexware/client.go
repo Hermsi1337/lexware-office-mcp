@@ -1,26 +1,24 @@
 package lexware
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"mime"
 	"net/http"
-	"net/url"
-	"path"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/go-resty/resty/v2"
 )
 
 type Client struct {
 	baseURL          string
 	apiToken         string
 	userAgent        string
-	httpClient       *http.Client
+	restClient       *resty.Client
 	minInterval      time.Duration
 	finalizeInvoices bool
 
@@ -46,15 +44,27 @@ type Response struct {
 }
 
 func NewClient(cfg Config) *Client {
+	restClient := resty.New().
+		SetBaseURL(cfg.BaseURL).
+		SetTimeout(cfg.HTTPTimeout).
+		SetHeader("Authorization", "Bearer "+cfg.APIToken).
+		SetHeader("Content-Type", "application/json").
+		SetHeader("Accept", "application/json").
+		SetHeader("User-Agent", cfg.UserAgent).
+		SetRetryCount(5).
+		SetRetryWaitTime(10 * time.Second).
+		SetRetryMaxWaitTime(60 * time.Second).
+		AddRetryCondition(func(resp *resty.Response, err error) bool {
+			return err == nil && resp != nil && resp.StatusCode() == http.StatusTooManyRequests
+		})
+
 	return &Client{
 		baseURL:          cfg.BaseURL,
 		apiToken:         cfg.APIToken,
 		userAgent:        cfg.UserAgent,
+		restClient:       restClient,
 		minInterval:      cfg.MinInterval,
 		finalizeInvoices: cfg.FinalizeInvoices,
-		httpClient: &http.Client{
-			Timeout: cfg.HTTPTimeout,
-		},
 	}
 }
 
@@ -64,63 +74,36 @@ func (c *Client) Do(ctx context.Context, req Request) (*Response, error) {
 		method = http.MethodGet
 	}
 
-	u, err := url.Parse(c.baseURL)
-	if err != nil {
-		return nil, fmt.Errorf("parse base url: %w", err)
-	}
-	u.Path = path.Join(u.Path, strings.TrimPrefix(req.Path, "/"))
-
-	query := u.Query()
-	for key, value := range req.Query {
-		if strings.TrimSpace(key) == "" {
-			continue
-		}
-		query.Set(key, value)
-	}
-	u.RawQuery = query.Encode()
-
-	var bodyReader io.Reader
-	if req.Body != nil {
-		payload, err := json.Marshal(req.Body)
-		if err != nil {
-			return nil, fmt.Errorf("marshal request body: %w", err)
-		}
-		bodyReader = bytes.NewReader(payload)
-	}
-
-	httpReq, err := http.NewRequestWithContext(ctx, method, u.String(), bodyReader)
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-
-	httpReq.Header.Set("Authorization", "Bearer "+c.apiToken)
-	httpReq.Header.Set("User-Agent", c.userAgent)
-	if req.Body != nil {
-		httpReq.Header.Set("Content-Type", "application/json")
-	}
-	if strings.TrimSpace(req.Accept) != "" {
-		httpReq.Header.Set("Accept", req.Accept)
-	} else {
-		httpReq.Header.Set("Accept", "application/json")
-	}
-
 	if err := c.waitTurn(ctx); err != nil {
 		return nil, err
 	}
 
-	httpResp, err := c.httpClient.Do(httpReq)
+	restReq := c.restClient.R().SetContext(ctx)
+	if req.Body != nil {
+		restReq.SetBody(req.Body)
+	}
+	if strings.TrimSpace(req.Accept) != "" {
+		restReq.SetHeader("Accept", req.Accept)
+	}
+	for key, value := range req.Query {
+		if strings.TrimSpace(key) == "" {
+			continue
+		}
+		restReq.SetQueryParam(key, value)
+	}
+
+	restResp, err := restReq.Execute(method, req.Path)
 	if err != nil {
 		return nil, fmt.Errorf("send request: %w", err)
 	}
-	defer httpResp.Body.Close()
 
-	resp, err := decodeResponse(httpResp)
+	resp, err := decodeResponse(restResp.RawResponse, restResp.Body())
 	if err != nil {
 		return nil, err
 	}
 
-	if httpResp.StatusCode >= 400 {
-		return resp, fmt.Errorf("lexware api returned status %d", httpResp.StatusCode)
+	if restResp.StatusCode() >= 400 {
+		return resp, fmt.Errorf("lexware api returned status %d", restResp.StatusCode())
 	}
 
 	return resp, nil
@@ -153,10 +136,9 @@ func (c *Client) waitTurn(ctx context.Context) error {
 	return nil
 }
 
-func decodeResponse(httpResp *http.Response) (*Response, error) {
-	body, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response body: %w", err)
+func decodeResponse(httpResp *http.Response, body []byte) (*Response, error) {
+	if httpResp == nil {
+		return nil, fmt.Errorf("missing http response")
 	}
 
 	resp := &Response{

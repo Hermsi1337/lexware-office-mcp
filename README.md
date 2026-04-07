@@ -25,6 +25,8 @@ The repository also includes an initial set of typed workflow coverage:
 - simple contact creation
 - invoice creation with the `finalize` query parameter
 
+Internally, the Lexware HTTP client uses `resty` with conservative local pacing plus automatic retries for HTTP `429` responses.
+
 ## Requirements
 
 - Go 1.22 or newer
