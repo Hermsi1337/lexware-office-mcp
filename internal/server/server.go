@@ -21,7 +21,7 @@ type createSimpleContactInput struct {
 }
 
 type createInvoiceInput struct {
-	Invoice  lexware.Invoice `json:"invoice" jsonschema:"Invoice payload based on the legacy project structure"`
+	Invoice  lexware.Invoice `json:"invoice" jsonschema:"Invoice payload"`
 	Finalize *bool           `json:"finalize,omitempty" jsonschema:"Optional override for Lexware invoice finalization"`
 }
 
@@ -48,12 +48,12 @@ func (s *Server) registerTools() {
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_create_simple_contact",
-		Description: "Create a simple customer contact using the legacy integration shape.",
+		Description: "Create a simple customer contact.",
 	}, s.createSimpleContact)
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_create_invoice",
-		Description: "Create an invoice using the legacy integration invoice shape and an optional finalize flag.",
+		Description: "Create an invoice with an optional finalize flag.",
 	}, s.createInvoice)
 }
 

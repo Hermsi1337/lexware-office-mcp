@@ -73,7 +73,7 @@ Fetch the current profile:
 }
 ```
 
-Create a simple contact using the legacy helper:
+Create a simple contact:
 
 ```json
 {
@@ -85,7 +85,7 @@ Create a simple contact using the legacy helper:
 }
 ```
 
-Create an invoice using the legacy integration shape:
+Create an invoice:
 
 ```json
 {
