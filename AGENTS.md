@@ -1,0 +1,84 @@
+# AGENTS.md
+
+## Project Purpose
+
+This repository contains a Go-based MCP server for the Lexware Office public API. The project goal is to provide a maintainable, extensible bridge between MCP clients and Lexware resources such as contacts, articles, invoices, vouchers, files, and related accounting workflows.
+
+## Mandatory Repository Language
+
+All repository-facing content must be written in English.
+
+This rule applies to:
+
+- source code comments
+- commit messages
+- pull request titles and descriptions
+- README content
+- AGENTS/CLAUDE guidance files
+- issue text added by agents
+- generated docs and examples
+- test names when readable prose is involved
+
+User prompts may be in German or another language, but the repository output must remain English unless the user explicitly requests a non-English artifact for product reasons.
+
+## Working Agreement For Agents
+
+- Preserve the existing Go codebase and extend it incrementally.
+- Prefer small, composable changes over broad rewrites.
+- Keep the server usable as an MVP even while dedicated endpoint wrappers are still incomplete.
+- Favor typed MCP tools where the schema is stable and valuable.
+- It is acceptable to use a raw passthrough tool for Lexware endpoints that have not yet been modeled with dedicated Go types.
+- Respect Lexware API limits and keep rate limiting or retry behavior explicit in code.
+- Prefer official Lexware API behavior over assumptions; verify unclear details against the official documentation.
+
+## Documentation Requirements
+
+Before every commit, ensure both of these files are up to date with the current implementation:
+
+- `README.md`
+- `AGENTS.md`
+
+If the code changes behavior, setup, scope, supported tools, constraints, or conventions, update the documentation in the same change before committing.
+
+## Current Architecture
+
+- `cmd/lexware-office-mcp/main.go`: application entrypoint
+- `internal/lexware/config.go`: environment-based configuration loading
+- `internal/lexware/client.go`: authenticated Lexware HTTP client with basic rate limiting and response decoding
+- `internal/server/server.go`: MCP server setup and tool registration
+
+## Current MVP Tool Surface
+
+The repository currently exposes these MCP tools:
+
+- `lexware_get_profile`
+- `lexware_list_contacts`
+- `lexware_get_contact`
+- `lexware_create_contact`
+- `lexware_update_contact`
+- `lexware_list_articles`
+- `lexware_get_article`
+- `lexware_get_invoice`
+- `lexware_list_vouchers`
+- `lexware_api_request`
+
+When adding or removing tools, update `README.md` and this file before committing.
+
+## Preferred Next Steps
+
+- Add dedicated invoice operations beyond single-invoice retrieval
+- Add typed voucher and file workflows
+- Improve endpoint-specific request and response typing
+- Add tests for config loading, client behavior, and MCP tool handlers
+- Consider better error mapping and retry strategy for Lexware API failures
+
+## Commit Hygiene
+
+- Keep commits focused and readable.
+- Use English commit messages.
+- Do not commit local workspace artifacts such as `.codex`, `.gocache`, `.gomodcache`, or IDE metadata.
+- Keep `.gitignore` current when new local-only files appear.
+
+## CLAUDE.md
+
+`CLAUDE.md` should remain a symlink to `AGENTS.md` so tools and coding agents that look for either file receive the same repository guidance.
