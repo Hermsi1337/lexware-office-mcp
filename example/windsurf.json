@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "lexware-office": {
+      "command": "/absolute/path/to/lexware-office-mcp",
+      "env": {
+        "LEXWARE_API_TOKEN": "your-private-api-key"
+      }
+    }
+  }
+}

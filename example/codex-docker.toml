@@ -1,0 +1,6 @@
+[mcp_servers.lexware-office]
+command = "docker"
+args = ["run", "-i", "--rm", "-e", "LEXWARE_API_TOKEN", "ghcr.io/hermsi1337/lexware-office-mcp:latest"]
+
+[mcp_servers.lexware-office.env]
+LEXWARE_API_TOKEN = "your-private-api-key"

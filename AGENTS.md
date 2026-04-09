@@ -54,6 +54,7 @@ The repository follows the [golang-standards/project-layout](https://github.com/
 - `internal/server/server.go`: MCP server setup and tool registration
 - `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
 - `build/package/docker/`: Dockerfiles for container image builds
+- `example/`: ready-to-use MCP client configuration files for Claude, Cursor, Codex, and Windsurf
 - `.github/workflows/release.yml`: GitHub Actions workflow triggered by version tags
 
 ## Current MVP Tool Surface
