@@ -1,0 +1,58 @@
+version: 2
+
+project_name: lexware-office-mcp
+
+before:
+  hooks:
+    - go test -race -failfast ./...
+
+builds:
+  - id: lexware-office-mcp
+    main: ./cmd/lexware-office-mcp
+    binary: lexware-office-mcp
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+dockers_v2:
+  - images:
+      - "ghcr.io/hermsi1337/lexware-office-mcp"
+    dockerfile: build/package/docker/GoReleaser.Dockerfile
+    tags:
+      - "{{ .Version }}"
+      - "{{ .Major }}.{{ .Minor }}"
+      - latest
+    labels:
+      org.opencontainers.image.title: "{{ .ProjectName }}"
+      org.opencontainers.image.version: "{{ .Version }}"
+      org.opencontainers.image.source: "https://github.com/Hermsi1337/lexware-office-mcp"

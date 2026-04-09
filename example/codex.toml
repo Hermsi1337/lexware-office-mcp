@@ -1,0 +1,5 @@
+[mcp_servers.lexware-office]
+command = "/absolute/path/to/lexware-office-mcp"
+
+[mcp_servers.lexware-office.env]
+LEXWARE_API_TOKEN = "your-private-api-key"
