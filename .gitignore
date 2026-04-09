@@ -1,5 +1,6 @@
 bin/
-dist/
+dist/*
+!dist/.gitkeep
 *.exe
 *.log
 *.out

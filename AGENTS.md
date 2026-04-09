@@ -44,12 +44,17 @@ Before every commit, ensure both of these files are up to date with the current 
 
 If the code changes behavior, setup, scope, supported tools, constraints, or conventions, update the documentation in the same change before committing.
 
-## Current Architecture
+## Project Layout
+
+The repository follows the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) convention:
 
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
 - `internal/lexware/config.go`: environment-based configuration loading
 - `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling
 - `internal/server/server.go`: MCP server setup and tool registration
+- `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
+- `build/package/docker/`: Dockerfiles for container image builds
+- `.github/workflows/release.yml`: GitHub Actions workflow triggered by version tags
 
 ## Current MVP Tool Surface
 
@@ -68,6 +73,20 @@ When adding or removing tools, update `README.md` and this file before committin
 - Improve endpoint-specific request and response typing
 - Add tests for config loading, client behavior, and MCP tool handlers
 - Consider better error mapping and retry strategy for Lexware API failures
+
+## Release Process
+
+Releases are managed by [GoReleaser](https://goreleaser.com/) and triggered by pushing a git tag matching `v*`:
+
+1. Tag a commit: `git tag v0.1.0 && git push origin v0.1.0`
+2. GitHub Actions builds multi-platform binaries (linux/darwin/windows, amd64/arm64)
+3. Multi-arch Docker images are pushed to `ghcr.io/hermsi1337/lexware-office-mcp`
+4. A GitHub Release is created with binaries and checksums
+
+Local testing via Docker (no GoReleaser install needed):
+
+- `make release-check` -- validate config
+- `make release-snapshot` -- build without publishing
 
 ## Commit Hygiene
 
