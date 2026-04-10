@@ -263,6 +263,104 @@ func (c *Client) GetCreditNote(ctx context.Context, id string) (*CreditNoteDetai
 	return result, nil
 }
 
+// ---------- Voucherlist ----------
+
+// VoucherlistFilter holds query parameters for the voucherlist endpoint.
+type VoucherlistFilter struct {
+	VoucherType   string // Comma-separated: salesinvoice,salescreditnote,purchaseinvoice,purchasecreditnote
+	VoucherStatus string // Comma-separated: open,paid,paidoff,voided,transferred,sepadebit,unchecked
+	Page          int
+	Size          int // 1-250, default 250
+}
+
+func (c *Client) ListVouchers(ctx context.Context, filter VoucherlistFilter) (*Page[VoucherListItem], error) {
+	req := c.newRequest(ctx)
+	if filter.VoucherType != "" {
+		req.SetQueryParam("voucherType", filter.VoucherType)
+	}
+	if filter.VoucherStatus != "" {
+		req.SetQueryParam("voucherStatus", filter.VoucherStatus)
+	}
+	if filter.Page > 0 {
+		req.SetQueryParam("page", strconv.Itoa(filter.Page))
+	}
+	if filter.Size > 0 {
+		req.SetQueryParam("size", strconv.Itoa(filter.Size))
+	}
+
+	result := &Page[VoucherListItem]{}
+	resp, err := req.SetResult(result).Get("/v1/voucherlist")
+	if apiErr := wrapAPIError("list vouchers", resp, err); apiErr != nil {
+		return nil, apiErr
+	}
+
+	return result, nil
+}
+
+// ---------- Delivery Notes ----------
+
+type CreateDeliveryNoteResult struct {
+	ID string `json:"id"`
+}
+
+func (c *Client) CreateDeliveryNote(ctx context.Context, note DeliveryNote, finalize *bool) (*CreateDeliveryNoteResult, error) {
+	result := &CreateDeliveryNoteResult{}
+	resp, err := c.newRequest(ctx).
+		SetBody(note).
+		SetResult(result).
+		SetQueryParam("finalize", strconv.FormatBool(c.resolveFinalize(finalize))).
+		Post("/v1/delivery-notes")
+	if apiErr := wrapAPIError("create delivery note", resp, err); apiErr != nil {
+		return result, apiErr
+	}
+
+	return result, nil
+}
+
+func (c *Client) GetDeliveryNote(ctx context.Context, id string) (*DeliveryNoteDetail, error) {
+	result := &DeliveryNoteDetail{}
+	resp, err := c.newRequest(ctx).
+		SetResult(result).
+		Get("/v1/delivery-notes/" + id)
+	if apiErr := wrapAPIError("get delivery note", resp, err); apiErr != nil {
+		return nil, apiErr
+	}
+
+	return result, nil
+}
+
+// ---------- Order Confirmations ----------
+
+type CreateOrderConfirmationResult struct {
+	ID string `json:"id"`
+}
+
+func (c *Client) CreateOrderConfirmation(ctx context.Context, oc OrderConfirmation, finalize *bool) (*CreateOrderConfirmationResult, error) {
+	result := &CreateOrderConfirmationResult{}
+	resp, err := c.newRequest(ctx).
+		SetBody(oc).
+		SetResult(result).
+		SetQueryParam("finalize", strconv.FormatBool(c.resolveFinalize(finalize))).
+		Post("/v1/order-confirmations")
+	if apiErr := wrapAPIError("create order confirmation", resp, err); apiErr != nil {
+		return result, apiErr
+	}
+
+	return result, nil
+}
+
+func (c *Client) GetOrderConfirmation(ctx context.Context, id string) (*OrderConfirmationDetail, error) {
+	result := &OrderConfirmationDetail{}
+	resp, err := c.newRequest(ctx).
+		SetResult(result).
+		Get("/v1/order-confirmations/" + id)
+	if apiErr := wrapAPIError("get order confirmation", resp, err); apiErr != nil {
+		return nil, apiErr
+	}
+
+	return result, nil
+}
+
 // ---------- Countries ----------
 
 func (c *Client) ListCountries(ctx context.Context) ([]Country, error) {

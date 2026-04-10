@@ -8,6 +8,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dennis/lexware-office-mcp/internal/lexware"
+	"github.com/dennis/lexware-office-mcp/internal/version"
 )
 
 type Server struct {
@@ -77,12 +78,37 @@ type getCreditNoteInput struct {
 	ID string `json:"id" jsonschema:"UUID of the credit note to retrieve"`
 }
 
+type listVouchersInput struct {
+	VoucherType   string `json:"voucherType,omitempty" jsonschema:"Comma-separated voucher types: salesinvoice, salescreditnote, purchaseinvoice, purchasecreditnote"`
+	VoucherStatus string `json:"voucherStatus,omitempty" jsonschema:"Comma-separated statuses: open, paid, paidoff, voided, transferred, sepadebit, unchecked"`
+	Page          int    `json:"page,omitempty" jsonschema:"Page number for pagination (0-based)"`
+	Size          int    `json:"size,omitempty" jsonschema:"Results per page (1-250, default 250)"`
+}
+
+type createDeliveryNoteInput struct {
+	DeliveryNote lexware.DeliveryNote `json:"deliveryNote" jsonschema:"Delivery note payload"`
+	Finalize     *bool                `json:"finalize,omitempty" jsonschema:"Optional override for Lexware finalization"`
+}
+
+type getDeliveryNoteInput struct {
+	ID string `json:"id" jsonschema:"UUID of the delivery note to retrieve"`
+}
+
+type createOrderConfirmationInput struct {
+	OrderConfirmation lexware.OrderConfirmation `json:"orderConfirmation" jsonschema:"Order confirmation payload"`
+	Finalize          *bool                     `json:"finalize,omitempty" jsonschema:"Optional override for Lexware finalization"`
+}
+
+type getOrderConfirmationInput struct {
+	ID string `json:"id" jsonschema:"UUID of the order confirmation to retrieve"`
+}
+
 // ---------- Constructor ----------
 
 func New(client *lexware.Client) *mcp.Server {
 	srv := mcp.NewServer(&mcp.Implementation{
 		Name:    "lexware-office-mcp",
-		Version: "0.2.0",
+		Version: version.Version,
 	}, nil)
 
 	wrapped := &Server{
@@ -167,6 +193,34 @@ func (s *Server) registerTools() {
 		Name:        "lexware_get_credit_note",
 		Description: "Retrieve a single credit note by its UUID.",
 	}, s.getCreditNote)
+
+	// Voucherlist
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_list_vouchers",
+		Description: "List vouchers across all document types with filters for voucher type and status. Returns a unified view of invoices, credit notes, and purchase documents.",
+	}, s.listVouchers)
+
+	// Delivery Notes
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_create_delivery_note",
+		Description: "Create a delivery note with line items and an optional finalize flag.",
+	}, s.createDeliveryNote)
+
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_get_delivery_note",
+		Description: "Retrieve a single delivery note by its UUID.",
+	}, s.getDeliveryNote)
+
+	// Order Confirmations
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_create_order_confirmation",
+		Description: "Create an order confirmation with line items and an optional finalize flag.",
+	}, s.createOrderConfirmation)
+
+	mcp.AddTool(s.Server, &mcp.Tool{
+		Name:        "lexware_get_order_confirmation",
+		Description: "Retrieve a single order confirmation by its UUID.",
+	}, s.getOrderConfirmation)
 
 	// Countries
 	mcp.AddTool(s.Server, &mcp.Tool{
@@ -280,6 +334,46 @@ func (s *Server) getCreditNote(ctx context.Context, _ *mcp.CallToolRequest, inpu
 
 	result, err := s.client.GetCreditNote(ctx, input.ID)
 	return s.workflowResult("get credit note", result, err)
+}
+
+func (s *Server) listVouchers(ctx context.Context, _ *mcp.CallToolRequest, input listVouchersInput) (*mcp.CallToolResult, map[string]any, error) {
+	filter := lexware.VoucherlistFilter{
+		VoucherType:   input.VoucherType,
+		VoucherStatus: input.VoucherStatus,
+		Page:          input.Page,
+		Size:          input.Size,
+	}
+
+	result, err := s.client.ListVouchers(ctx, filter)
+	return s.workflowResult("list vouchers", result, err)
+}
+
+func (s *Server) createDeliveryNote(ctx context.Context, _ *mcp.CallToolRequest, input createDeliveryNoteInput) (*mcp.CallToolResult, map[string]any, error) {
+	result, err := s.client.CreateDeliveryNote(ctx, input.DeliveryNote, input.Finalize)
+	return s.workflowResult("create delivery note", result, err)
+}
+
+func (s *Server) getDeliveryNote(ctx context.Context, _ *mcp.CallToolRequest, input getDeliveryNoteInput) (*mcp.CallToolResult, map[string]any, error) {
+	if strings.TrimSpace(input.ID) == "" {
+		return nil, nil, fmt.Errorf("id is required")
+	}
+
+	result, err := s.client.GetDeliveryNote(ctx, input.ID)
+	return s.workflowResult("get delivery note", result, err)
+}
+
+func (s *Server) createOrderConfirmation(ctx context.Context, _ *mcp.CallToolRequest, input createOrderConfirmationInput) (*mcp.CallToolResult, map[string]any, error) {
+	result, err := s.client.CreateOrderConfirmation(ctx, input.OrderConfirmation, input.Finalize)
+	return s.workflowResult("create order confirmation", result, err)
+}
+
+func (s *Server) getOrderConfirmation(ctx context.Context, _ *mcp.CallToolRequest, input getOrderConfirmationInput) (*mcp.CallToolResult, map[string]any, error) {
+	if strings.TrimSpace(input.ID) == "" {
+		return nil, nil, fmt.Errorf("id is required")
+	}
+
+	result, err := s.client.GetOrderConfirmation(ctx, input.ID)
+	return s.workflowResult("get order confirmation", result, err)
 }
 
 func (s *Server) listCountries(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {

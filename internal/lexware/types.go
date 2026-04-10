@@ -290,6 +290,91 @@ type Country struct {
 	TaxClassification string `json:"taxClassification"`
 }
 
+// ---------- Voucherlist ----------
+
+type VoucherListItem struct {
+	VoucherID        string  `json:"voucherId"`
+	VoucherType      string  `json:"voucherType"`
+	VoucherStatus    string  `json:"voucherStatus"`
+	VoucherNumber    string  `json:"voucherNumber"`
+	VoucherDate      string  `json:"voucherDate"`
+	DueDate          string  `json:"dueDate,omitempty"`
+	ContactID        string  `json:"contactId,omitempty"`
+	ContactName      string  `json:"contactName,omitempty"`
+	TotalAmount      float64 `json:"totalAmount"`
+	OpenAmount       float64 `json:"openAmount,omitempty"`
+	Currency         string  `json:"currency"`
+	Archived         bool    `json:"archived,omitempty"`
+	CreatedDate      string  `json:"createdDate,omitempty"`
+	UpdatedDate      string  `json:"updatedDate,omitempty"`
+}
+
+// ---------- Delivery Notes ----------
+
+type DeliveryNote struct {
+	VoucherDate   string       `json:"voucherDate"`
+	Address       Address      `json:"address"`
+	LineItems     []LineItem   `json:"lineItems"`
+	TaxConditions TaxCondition `json:"taxConditions"`
+	ShippingTerms ShippingTerm `json:"shippingConditions"`
+	Title         string       `json:"title,omitempty"`
+	Introduction  string       `json:"introduction,omitempty"`
+	Remark        string       `json:"remark,omitempty"`
+}
+
+type DeliveryNoteDetail struct {
+	ID             string       `json:"id"`
+	OrganizationID string       `json:"organizationId"`
+	VoucherStatus  string       `json:"voucherStatus"`
+	VoucherNumber  string       `json:"voucherNumber"`
+	VoucherDate    string       `json:"voucherDate"`
+	Address        Address      `json:"address"`
+	LineItems      []LineItem   `json:"lineItems"`
+	TaxConditions  TaxCondition `json:"taxConditions"`
+	ShippingTerms  ShippingTerm `json:"shippingConditions"`
+	Title          string       `json:"title,omitempty"`
+	Introduction   string       `json:"introduction,omitempty"`
+	Remark         string       `json:"remark,omitempty"`
+	Version        int          `json:"version"`
+	CreatedDate    string       `json:"createdDate,omitempty"`
+	UpdatedDate    string       `json:"updatedDate,omitempty"`
+}
+
+// ---------- Order Confirmations ----------
+
+type OrderConfirmation struct {
+	VoucherDate   string       `json:"voucherDate"`
+	Address       Address      `json:"address"`
+	LineItems     []LineItem   `json:"lineItems"`
+	TotalPrice    TotalPrice   `json:"totalPrice"`
+	TaxConditions TaxCondition `json:"taxConditions"`
+	PaymentTerms  PaymentTerms `json:"paymentConditions,omitempty"`
+	ShippingTerms ShippingTerm `json:"shippingConditions"`
+	Title         string       `json:"title,omitempty"`
+	Introduction  string       `json:"introduction,omitempty"`
+	Remark        string       `json:"remark,omitempty"`
+}
+
+type OrderConfirmationDetail struct {
+	ID             string       `json:"id"`
+	OrganizationID string       `json:"organizationId"`
+	VoucherStatus  string       `json:"voucherStatus"`
+	VoucherNumber  string       `json:"voucherNumber"`
+	VoucherDate    string       `json:"voucherDate"`
+	Address        Address      `json:"address"`
+	LineItems      []LineItem   `json:"lineItems"`
+	TotalPrice     TotalPrice   `json:"totalPrice"`
+	TaxConditions  TaxCondition `json:"taxConditions"`
+	PaymentTerms   PaymentTerms `json:"paymentConditions,omitempty"`
+	ShippingTerms  ShippingTerm `json:"shippingConditions"`
+	Title          string       `json:"title,omitempty"`
+	Introduction   string       `json:"introduction,omitempty"`
+	Remark         string       `json:"remark,omitempty"`
+	Version        int          `json:"version"`
+	CreatedDate    string       `json:"createdDate,omitempty"`
+	UpdatedDate    string       `json:"updatedDate,omitempty"`
+}
+
 // ---------- Helper constructors ----------
 
 func TaxConditionGross() TaxCondition {
