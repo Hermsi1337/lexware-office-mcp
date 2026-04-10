@@ -35,6 +35,12 @@ User prompts may be in German or another language, but the repository output mus
 - Respect Lexware API limits and keep rate limiting or retry behavior explicit in code.
 - Prefer official Lexware API behavior over assumptions; verify unclear details against the official documentation.
 
+## Testing Conventions
+
+- All tests use [testify](https://github.com/stretchr/testify).
+- Use `require` exclusively -- never `assert`. Tests must fail immediately on the first violated expectation rather than accumulating soft failures.
+- Integration-style tests use `net/http/httptest` to mock the Lexware API.
+
 ## Documentation Requirements
 
 Before every commit, ensure both of these files are up to date with the current implementation:

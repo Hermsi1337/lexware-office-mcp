@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 // testClient returns a Client pointing at a test HTTP server.
@@ -27,9 +29,7 @@ func testClient(t *testing.T, handler http.Handler) (*Client, *httptest.Server) 
 func TestGetProfile(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/profile", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
-			t.Errorf("Authorization = %q, want Bearer test-token", got)
-		}
+		require.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Profile{OrganizationID: "org-123"})
@@ -37,12 +37,8 @@ func TestGetProfile(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	profile, err := client.GetProfile(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if profile.OrganizationID != "org-123" {
-		t.Errorf("OrganizationID = %q, want %q", profile.OrganizationID, "org-123")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "org-123", profile.OrganizationID)
 }
 
 func TestGetContact(t *testing.T) {
@@ -58,23 +54,15 @@ func TestGetContact(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	contact, err := client.GetContact(context.Background(), "abc-123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if contact.ID != "abc-123" {
-		t.Errorf("ID = %q, want %q", contact.ID, "abc-123")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "abc-123", contact.ID)
 }
 
 func TestListContacts(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/contacts", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("name"); got != "Muster%" {
-			t.Errorf("name param = %q, want %q", got, "Muster%")
-		}
-		if got := r.URL.Query().Get("customer"); got != "true" {
-			t.Errorf("customer param = %q, want %q", got, "true")
-		}
+		require.Equal(t, "Muster%", r.URL.Query().Get("name"))
+		require.Equal(t, "true", r.URL.Query().Get("customer"))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Page[ContactDetail]{
@@ -92,31 +80,20 @@ func TestListContacts(t *testing.T) {
 		Name:     "Muster%",
 		Customer: &boolTrue,
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(result.Content) != 1 {
-		t.Fatalf("got %d contacts, want 1", len(result.Content))
-	}
-	if result.Content[0].ID != "c1" {
-		t.Errorf("contact ID = %q, want %q", result.Content[0].ID, "c1")
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Content, 1)
+	require.Equal(t, "c1", result.Content[0].ID)
 }
 
 func TestCreateInvoice(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("finalize"); got != "true" {
-			t.Errorf("finalize param = %q, want %q", got, "true")
-		}
+		require.Equal(t, "true", r.URL.Query().Get("finalize"))
 
 		var invoice Invoice
-		if err := json.NewDecoder(r.Body).Decode(&invoice); err != nil {
-			t.Fatalf("failed to decode request body: %v", err)
-		}
-		if invoice.VoucherDate != "2026-01-01" {
-			t.Errorf("VoucherDate = %q, want %q", invoice.VoucherDate, "2026-01-01")
-		}
+		err := json.NewDecoder(r.Body).Decode(&invoice)
+		require.NoError(t, err)
+		require.Equal(t, "2026-01-01", invoice.VoucherDate)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -131,12 +108,8 @@ func TestCreateInvoice(t *testing.T) {
 		ShippingTerms: ShippingTermNone(),
 		TotalPrice:    TotalPrice{Currency: "EUR"},
 	}, &finalize)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if result.ID != "inv-1" {
-		t.Errorf("ID = %q, want %q", result.ID, "inv-1")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "inv-1", result.ID)
 }
 
 func TestGetInvoice(t *testing.T) {
@@ -152,20 +125,14 @@ func TestGetInvoice(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	inv, err := client.GetInvoice(context.Background(), "inv-99")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if inv.VoucherStatus != "open" {
-		t.Errorf("VoucherStatus = %q, want %q", inv.VoucherStatus, "open")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "open", inv.VoucherStatus)
 }
 
 func TestListArticles(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/articles", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("type"); got != "SERVICE" {
-			t.Errorf("type param = %q, want %q", got, "SERVICE")
-		}
+		require.Equal(t, "SERVICE", r.URL.Query().Get("type"))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Page[ArticleDetail]{
@@ -176,12 +143,9 @@ func TestListArticles(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	result, err := client.ListArticles(context.Background(), ArticleFilter{Type: "SERVICE"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(result.Content) != 1 || result.Content[0].Title != "Consulting" {
-		t.Errorf("unexpected articles: %+v", result.Content)
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Content, 1)
+	require.Equal(t, "Consulting", result.Content[0].Title)
 }
 
 func TestListCountries(t *testing.T) {
@@ -196,15 +160,9 @@ func TestListCountries(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	countries, err := client.ListCountries(context.Background())
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(countries) != 2 {
-		t.Fatalf("got %d countries, want 2", len(countries))
-	}
-	if countries[0].CountryCode != "DE" {
-		t.Errorf("first country = %q, want %q", countries[0].CountryCode, "DE")
-	}
+	require.NoError(t, err)
+	require.Len(t, countries, 2)
+	require.Equal(t, "DE", countries[0].CountryCode)
 }
 
 func TestAPIError(t *testing.T) {
@@ -216,20 +174,14 @@ func TestAPIError(t *testing.T) {
 
 	client, _ := testClient(t, mux)
 	_, err := client.GetProfile(context.Background())
-	if err == nil {
-		t.Fatal("expected error for 401 response")
-	}
-	if got := err.Error(); got == "" {
-		t.Error("error message should not be empty")
-	}
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "401")
 }
 
 func TestListVouchers(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /v1/voucherlist", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("voucherType"); got != "salesinvoice" {
-			t.Errorf("voucherType = %q, want %q", got, "salesinvoice")
-		}
+		require.Equal(t, "salesinvoice", r.URL.Query().Get("voucherType"))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Page[VoucherListItem]{
@@ -244,20 +196,15 @@ func TestListVouchers(t *testing.T) {
 	result, err := client.ListVouchers(context.Background(), VoucherlistFilter{
 		VoucherType: "salesinvoice",
 	})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if len(result.Content) != 1 || result.Content[0].VoucherID != "v1" {
-		t.Errorf("unexpected vouchers: %+v", result.Content)
-	}
+	require.NoError(t, err)
+	require.Len(t, result.Content, 1)
+	require.Equal(t, "v1", result.Content[0].VoucherID)
 }
 
 func TestFinalizeDefault(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("finalize"); got != "true" {
-			t.Errorf("finalize = %q, want %q (from config default)", got, "true")
-		}
+		require.Equal(t, "true", r.URL.Query().Get("finalize"), "should use config default")
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
@@ -272,21 +219,16 @@ func TestFinalizeDefault(t *testing.T) {
 		BaseURL:          srv.URL,
 		UserAgent:        "test-agent",
 		HTTPTimeout:      5 * time.Second,
-		FinalizeInvoices: true, // default finalize = true
+		FinalizeInvoices: true,
 	}
 	client := NewClient(cfg)
 
-	// Pass nil to use the config default.
 	result, err := client.CreateInvoice(context.Background(), Invoice{
 		VoucherDate:   "2026-01-01",
 		TaxConditions: TaxConditionGross(),
 		ShippingTerms: ShippingTermNone(),
 		TotalPrice:    TotalPrice{Currency: "EUR"},
 	}, nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if result.ID != "inv-default" {
-		t.Errorf("ID = %q, want %q", result.ID, "inv-default")
-	}
+	require.NoError(t, err)
+	require.Equal(t, "inv-default", result.ID)
 }

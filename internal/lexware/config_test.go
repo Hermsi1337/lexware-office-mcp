@@ -4,15 +4,15 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadConfigFromEnv_RequiresToken(t *testing.T) {
 	t.Setenv("LEXWARE_API_TOKEN", "")
 
 	_, err := LoadConfigFromEnv()
-	if err == nil {
-		t.Fatal("expected error when LEXWARE_API_TOKEN is empty")
-	}
+	require.Error(t, err)
 }
 
 func TestLoadConfigFromEnv_Defaults(t *testing.T) {
@@ -24,25 +24,13 @@ func TestLoadConfigFromEnv_Defaults(t *testing.T) {
 	}
 
 	cfg, err := LoadConfigFromEnv()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if cfg.APIToken != "test-token" {
-		t.Errorf("APIToken = %q, want %q", cfg.APIToken, "test-token")
-	}
-	if cfg.BaseURL != defaultBaseURL {
-		t.Errorf("BaseURL = %q, want %q", cfg.BaseURL, defaultBaseURL)
-	}
-	if cfg.UserAgent != defaultUserAgent() {
-		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, defaultUserAgent())
-	}
-	if cfg.HTTPTimeout != 30*time.Second {
-		t.Errorf("HTTPTimeout = %v, want %v", cfg.HTTPTimeout, 30*time.Second)
-	}
-	if cfg.FinalizeInvoices {
-		t.Error("FinalizeInvoices should default to false")
-	}
+	require.Equal(t, "test-token", cfg.APIToken)
+	require.Equal(t, defaultBaseURL, cfg.BaseURL)
+	require.Equal(t, defaultUserAgent(), cfg.UserAgent)
+	require.Equal(t, 30*time.Second, cfg.HTTPTimeout)
+	require.False(t, cfg.FinalizeInvoices)
 }
 
 func TestLoadConfigFromEnv_CustomValues(t *testing.T) {
@@ -52,23 +40,12 @@ func TestLoadConfigFromEnv_CustomValues(t *testing.T) {
 	t.Setenv("LEXWARE_FINALIZE_INVOICES", "true")
 
 	cfg, err := LoadConfigFromEnv()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
+	require.NoError(t, err)
 
-	if cfg.APIToken != "custom-token" {
-		t.Errorf("APIToken = %q, want %q", cfg.APIToken, "custom-token")
-	}
-	// Trailing slash should be trimmed.
-	if cfg.BaseURL != "https://custom.api.test" {
-		t.Errorf("BaseURL = %q, want %q", cfg.BaseURL, "https://custom.api.test")
-	}
-	if cfg.UserAgent != "my-agent/2.0" {
-		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, "my-agent/2.0")
-	}
-	if !cfg.FinalizeInvoices {
-		t.Error("FinalizeInvoices should be true when env is 'true'")
-	}
+	require.Equal(t, "custom-token", cfg.APIToken)
+	require.Equal(t, "https://custom.api.test", cfg.BaseURL, "trailing slash should be trimmed")
+	require.Equal(t, "my-agent/2.0", cfg.UserAgent)
+	require.True(t, cfg.FinalizeInvoices)
 }
 
 func TestParseBoolEnv(t *testing.T) {
@@ -98,9 +75,7 @@ func TestParseBoolEnv(t *testing.T) {
 			}
 
 			got := parseBoolEnv(key, tt.fallback)
-			if got != tt.want {
-				t.Errorf("parseBoolEnv(%q, %v) = %v, want %v", key, tt.fallback, got, tt.want)
-			}
+			require.Equal(t, tt.want, got)
 		})
 	}
 }
