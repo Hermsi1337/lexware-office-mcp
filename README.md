@@ -38,6 +38,18 @@ Lexware Office is one of the most popular cloud accounting platforms in Germany.
 | `lexware_get_order_confirmation` | Retrieve a single order confirmation by UUID |
 | `lexware_list_countries` | List all countries with tax classifications |
 
+### Search and Filter Capabilities
+
+The Lexware API does not offer full-text search. Here is what each list tool supports:
+
+| Tool | Filter capabilities |
+|------|-------------------|
+| `lexware_list_contacts` | Name with wildcards (`%`, `_`, min 3 chars), email substring (min 3 chars), exact customer/vendor number, role filter |
+| `lexware_list_articles` | Exact article number, exact GTIN, type (PRODUCT/SERVICE) |
+| `lexware_list_vouchers` | Voucher type (salesinvoice, salescreditnote, etc.), voucher status (open, paid, voided, etc.) |
+
+**Finding invoices for a specific recipient:** The voucherlist returns `contactId` and `contactName` per entry but does not support filtering by them. The recommended workflow is: search the contact by name via `lexware_list_contacts`, then use the contact UUID to cross-reference vouchers.
+
 ## Prerequisites
 
 You need a **Lexware API token**. Generate one at [app.lexware.de/addons/public-api](https://app.lexware.de/addons/public-api).

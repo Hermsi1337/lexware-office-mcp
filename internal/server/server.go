@@ -142,7 +142,7 @@ func (s *Server) registerTools() {
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_list_contacts",
-		Description: "List contacts with optional filters for email, name, number, customer/vendor role, and pagination.",
+		Description: "List contacts with optional filters and pagination. Supports name search with wildcards (% and _, min 3 chars), email substring match (min 3 chars), exact customer/vendor number, and role filtering. This is the closest thing to a contact search the Lexware API offers.",
 	}, s.listContacts)
 
 	// Invoices
@@ -169,7 +169,7 @@ func (s *Server) registerTools() {
 
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_list_articles",
-		Description: "List articles with optional filters for article number, GTIN, type, and pagination.",
+		Description: "List articles with optional filters and pagination. Supports exact match on article number and GTIN, and filtering by type (PRODUCT or SERVICE). No full-text search available.",
 	}, s.listArticles)
 
 	// Quotations
@@ -197,7 +197,7 @@ func (s *Server) registerTools() {
 	// Voucherlist
 	mcp.AddTool(s.Server, &mcp.Tool{
 		Name:        "lexware_list_vouchers",
-		Description: "List vouchers across all document types with filters for voucher type and status. Returns a unified view of invoices, credit notes, and purchase documents.",
+		Description: "List vouchers across all document types with filters for voucher type and status. Returns a unified view of invoices, credit notes, and purchase documents with contact references. Note: no search by recipient name is available; to find vouchers for a specific contact, first look up the contact via lexware_list_contacts.",
 	}, s.listVouchers)
 
 	// Delivery Notes
