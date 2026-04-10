@@ -10,8 +10,10 @@ DOCKER_RUN := docker run --rm \
 	-w /workspace \
 	$(GORELEASER_IMAGE)
 
+VERSION ?= dev
+
 build:
-	go build -o bin/lexware-office-mcp ./cmd/lexware-office-mcp
+	go build -ldflags "-X github.com/dennis/lexware-office-mcp/internal/version.Version=$(VERSION)" -o bin/lexware-office-mcp ./cmd/lexware-office-mcp
 
 release-check:
 	$(DOCKER_RUN) check --config $(GORELEASER_CONFIG)

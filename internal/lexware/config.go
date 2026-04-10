@@ -6,12 +6,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/dennis/lexware-office-mcp/internal/version"
 )
 
-const (
-	defaultBaseURL   = "https://api.lexware.io"
-	defaultUserAgent = "lexware-office-mcp/0.1.0"
-)
+const defaultBaseURL = "https://api.lexware.io"
+
+func defaultUserAgent() string {
+	return "github.com/Hermsi1337/lexware-office-mcp/" + version.Version
+}
 
 type Config struct {
 	APIToken         string
@@ -34,7 +37,7 @@ func LoadConfigFromEnv() (Config, error) {
 
 	userAgent := strings.TrimSpace(os.Getenv("LEXWARE_USER_AGENT"))
 	if userAgent == "" {
-		userAgent = defaultUserAgent
+		userAgent = defaultUserAgent()
 	}
 
 	return Config{

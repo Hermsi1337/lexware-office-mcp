@@ -35,6 +35,14 @@ User prompts may be in German or another language, but the repository output mus
 - Respect Lexware API limits and keep rate limiting or retry behavior explicit in code.
 - Prefer official Lexware API behavior over assumptions; verify unclear details against the official documentation.
 
+## Testing Conventions
+
+- All tests use [testify](https://github.com/stretchr/testify).
+- Use `require` exclusively -- never `assert`. Tests must fail immediately on the first violated expectation rather than accumulating soft failures.
+- Every test file must be organized as one or more **testify suites** (`suite.Suite`). Do not use bare `Test*` functions.
+- Use the suite lifecycle interfaces where applicable: `SetupSuite` / `TearDownSuite` for one-time setup, `SetupTest` / `TearDownTest` for per-test setup and teardown.
+- Integration-style tests use `net/http/httptest` to mock the Lexware API. Create the mock server in `SetupTest` and close it in `TearDownTest`.
+
 ## Documentation Requirements
 
 Before every commit, ensure both of these files are up to date with the current implementation:
@@ -49,30 +57,79 @@ If the code changes behavior, setup, scope, supported tools, constraints, or con
 The repository follows the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) convention:
 
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
+- `internal/lexware/client.go`: authenticated Lexware HTTP client with 429 retry handling
 - `internal/lexware/config.go`: environment-based configuration loading
-- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling
-- `internal/server/server.go`: MCP server setup and tool registration
+- `internal/lexware/common_types.go`: shared types (Page, Address, LineItem, TotalPrice, etc.)
+- `internal/lexware/{resource}_types.go`: per-resource type definitions
+- `internal/lexware/{resource}.go`: per-resource Client methods, filters, result types
+- `internal/lexware/{resource}_test.go`: per-resource test suites
+- `internal/lexware/test_helpers_test.go`: shared baseSuite for httptest server lifecycle
+- `internal/version/version.go`: build-time version injection via ldflags
+- `internal/server/server.go`: MCP server shell (Server struct, constructor, result helper)
+- `internal/server/{resource}.go`: per-resource input types, handlers, tool registration
 - `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
 - `build/package/docker/`: Dockerfiles for container image builds
 - `example/`: ready-to-use MCP client configuration files for Claude, Cursor, Codex, and Windsurf
 - `.github/workflows/release.yml`: GitHub Actions workflow triggered by version tags
 
-## Current MVP Tool Surface
+## Current Tool Surface
 
-The repository currently exposes these MCP tools:
+The repository exposes these MCP tools:
 
+**Profile:**
 - `lexware_get_profile`
+
+**Contacts:**
 - `lexware_create_simple_contact`
+- `lexware_get_contact`
+- `lexware_list_contacts`
+
+**Invoices:**
 - `lexware_create_invoice`
+- `lexware_get_invoice`
+
+**Articles:**
+- `lexware_create_article`
+- `lexware_get_article`
+- `lexware_list_articles`
+
+**Quotations:**
+- `lexware_create_quotation`
+- `lexware_get_quotation`
+
+**Credit Notes:**
+- `lexware_create_credit_note`
+- `lexware_get_credit_note`
+
+**Voucherlist:**
+- `lexware_list_vouchers`
+
+**Delivery Notes:**
+- `lexware_create_delivery_note`
+- `lexware_get_delivery_note`
+
+**Order Confirmations:**
+- `lexware_create_order_confirmation`
+- `lexware_get_order_confirmation`
+
+**Down Payment Invoices:**
+- `lexware_get_down_payment_invoice`
+
+**Recurring Templates:**
+- `lexware_get_recurring_template`
+
+**Reference Data:**
+- `lexware_list_countries`
+- `lexware_list_payment_conditions`
+- `lexware_list_posting_categories`
 
 When adding or removing tools, update `README.md` and this file before committing.
 
 ## Preferred Next Steps
 
-- Add dedicated invoice operations beyond single-invoice retrieval
-- Add typed voucher and file workflows
-- Improve endpoint-specific request and response typing
-- Add tests for config loading, client behavior, and MCP tool handlers
+- Add voucher file upload/download workflows
+- Add dunning notice tools
+- Add event subscription support
 - Consider better error mapping and retry strategy for Lexware API failures
 
 ## Release Process

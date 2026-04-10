@@ -1,13 +1,12 @@
 package server
 
 import (
-	"context"
 	"fmt"
-	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/dennis/lexware-office-mcp/internal/lexware"
+	"github.com/dennis/lexware-office-mcp/internal/version"
 )
 
 type Server struct {
@@ -15,20 +14,10 @@ type Server struct {
 	client *lexware.Client
 }
 
-type createSimpleContactInput struct {
-	Name            string `json:"name" jsonschema:"Display name used as the contact last name in the simple contact helper"`
-	SourceReference string `json:"sourceReference,omitempty" jsonschema:"Optional source reference stored in the contact note, for example an order id"`
-}
-
-type createInvoiceInput struct {
-	Invoice  lexware.Invoice `json:"invoice" jsonschema:"Invoice payload"`
-	Finalize *bool           `json:"finalize,omitempty" jsonschema:"Optional override for Lexware invoice finalization"`
-}
-
 func New(client *lexware.Client) *mcp.Server {
 	srv := mcp.NewServer(&mcp.Implementation{
 		Name:    "lexware-office-mcp",
-		Version: "0.1.0",
+		Version: version.Version,
 	}, nil)
 
 	wrapped := &Server{
@@ -41,39 +30,20 @@ func New(client *lexware.Client) *mcp.Server {
 }
 
 func (s *Server) registerTools() {
-	mcp.AddTool(s.Server, &mcp.Tool{
-		Name:        "lexware_get_profile",
-		Description: "Fetch the current Lexware profile for the configured API token.",
-	}, s.getProfile)
-
-	mcp.AddTool(s.Server, &mcp.Tool{
-		Name:        "lexware_create_simple_contact",
-		Description: "Create a simple customer contact.",
-	}, s.createSimpleContact)
-
-	mcp.AddTool(s.Server, &mcp.Tool{
-		Name:        "lexware_create_invoice",
-		Description: "Create an invoice with an optional finalize flag.",
-	}, s.createInvoice)
-}
-
-func (s *Server) getProfile(ctx context.Context, _ *mcp.CallToolRequest, _ struct{}) (*mcp.CallToolResult, map[string]any, error) {
-	result, err := s.client.GetProfile(ctx)
-	return s.workflowResult("get profile", result, err)
-}
-
-func (s *Server) createSimpleContact(ctx context.Context, _ *mcp.CallToolRequest, input createSimpleContactInput) (*mcp.CallToolResult, map[string]any, error) {
-	if strings.TrimSpace(input.Name) == "" {
-		return nil, nil, fmt.Errorf("name is required")
-	}
-
-	result, err := s.client.CreateSimpleContact(ctx, input.Name, input.SourceReference)
-	return s.workflowResult("create contact", result, err)
-}
-
-func (s *Server) createInvoice(ctx context.Context, _ *mcp.CallToolRequest, input createInvoiceInput) (*mcp.CallToolResult, map[string]any, error) {
-	result, err := s.client.CreateInvoice(ctx, input.Invoice, input.Finalize)
-	return s.workflowResult("create invoice", result, err)
+	s.registerProfileTools()
+	s.registerContactTools()
+	s.registerInvoiceTools()
+	s.registerArticleTools()
+	s.registerQuotationTools()
+	s.registerCreditNoteTools()
+	s.registerVoucherlistTools()
+	s.registerDeliveryNoteTools()
+	s.registerOrderConfirmationTools()
+	s.registerCountryTools()
+	s.registerPaymentConditionTools()
+	s.registerPostingCategoryTools()
+	s.registerDownPaymentInvoiceTools()
+	s.registerRecurringTemplateTools()
 }
 
 func (s *Server) workflowResult(action string, result any, err error) (*mcp.CallToolResult, map[string]any, error) {
