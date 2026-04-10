@@ -39,7 +39,9 @@ User prompts may be in German or another language, but the repository output mus
 
 - All tests use [testify](https://github.com/stretchr/testify).
 - Use `require` exclusively -- never `assert`. Tests must fail immediately on the first violated expectation rather than accumulating soft failures.
-- Integration-style tests use `net/http/httptest` to mock the Lexware API.
+- Every test file must be organized as one or more **testify suites** (`suite.Suite`). Do not use bare `Test*` functions.
+- Use the suite lifecycle interfaces where applicable: `SetupSuite` / `TearDownSuite` for one-time setup, `SetupTest` / `TearDownTest` for per-test setup and teardown.
+- Integration-style tests use `net/http/httptest` to mock the Lexware API. Create the mock server in `SetupTest` and close it in `TearDownTest`.
 
 ## Documentation Requirements
 

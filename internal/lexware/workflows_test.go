@@ -9,60 +9,76 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/suite"
 )
 
-// testClient returns a Client pointing at a test HTTP server.
-func testClient(t *testing.T, handler http.Handler) (*Client, *httptest.Server) {
-	t.Helper()
-	srv := httptest.NewServer(handler)
-	t.Cleanup(srv.Close)
+// ---------- WorkflowSuite ----------
+
+// WorkflowSuite tests the Lexware API client workflows against a local
+// httptest server. SetupTest creates a fresh ServeMux before every test so
+// handlers never leak between cases.
+type WorkflowSuite struct {
+	suite.Suite
+	mux    *http.ServeMux
+	srv    *httptest.Server
+	client *Client
+}
+
+func TestWorkflowSuite(t *testing.T) {
+	suite.Run(t, new(WorkflowSuite))
+}
+
+func (s *WorkflowSuite) SetupTest() {
+	s.mux = http.NewServeMux()
+	s.srv = httptest.NewServer(s.mux)
 
 	cfg := Config{
 		APIToken:    "test-token",
-		BaseURL:     srv.URL,
+		BaseURL:     s.srv.URL,
 		UserAgent:   "test-agent",
 		HTTPTimeout: 5 * time.Second,
 	}
-	return NewClient(cfg), srv
+	s.client = NewClient(cfg)
 }
 
-func TestGetProfile(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/profile", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "Bearer test-token", r.Header.Get("Authorization"))
+func (s *WorkflowSuite) TearDownTest() {
+	s.srv.Close()
+}
 
+// ---------- Profile ----------
+
+func (s *WorkflowSuite) TestGetProfile() {
+	s.mux.HandleFunc("GET /v1/profile", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "Bearer test-token", r.Header.Get("Authorization"))
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Profile{OrganizationID: "org-123"})
 	})
 
-	client, _ := testClient(t, mux)
-	profile, err := client.GetProfile(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, "org-123", profile.OrganizationID)
+	profile, err := s.client.GetProfile(context.Background())
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "org-123", profile.OrganizationID)
 }
 
-func TestGetContact(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/contacts/{id}", func(w http.ResponseWriter, r *http.Request) {
-		id := r.PathValue("id")
+// ---------- Contacts ----------
+
+func (s *WorkflowSuite) TestGetContact() {
+	s.mux.HandleFunc("GET /v1/contacts/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(ContactDetail{
-			ID:      id,
+			ID:      r.PathValue("id"),
 			Version: 1,
 		})
 	})
 
-	client, _ := testClient(t, mux)
-	contact, err := client.GetContact(context.Background(), "abc-123")
-	require.NoError(t, err)
-	require.Equal(t, "abc-123", contact.ID)
+	contact, err := s.client.GetContact(context.Background(), "abc-123")
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "abc-123", contact.ID)
 }
 
-func TestListContacts(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/contacts", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "Muster%", r.URL.Query().Get("name"))
-		require.Equal(t, "true", r.URL.Query().Get("customer"))
+func (s *WorkflowSuite) TestListContacts() {
+	s.mux.HandleFunc("GET /v1/contacts", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "Muster%", r.URL.Query().Get("name"))
+		require.Equal(s.T(), "true", r.URL.Query().Get("customer"))
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(Page[ContactDetail]{
@@ -74,47 +90,45 @@ func TestListContacts(t *testing.T) {
 		})
 	})
 
-	client, _ := testClient(t, mux)
 	boolTrue := true
-	result, err := client.ListContacts(context.Background(), ContactFilter{
+	result, err := s.client.ListContacts(context.Background(), ContactFilter{
 		Name:     "Muster%",
 		Customer: &boolTrue,
 	})
-	require.NoError(t, err)
-	require.Len(t, result.Content, 1)
-	require.Equal(t, "c1", result.Content[0].ID)
+	require.NoError(s.T(), err)
+	require.Len(s.T(), result.Content, 1)
+	require.Equal(s.T(), "c1", result.Content[0].ID)
 }
 
-func TestCreateInvoice(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "true", r.URL.Query().Get("finalize"))
+// ---------- Invoices ----------
+
+func (s *WorkflowSuite) TestCreateInvoice() {
+	s.mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "true", r.URL.Query().Get("finalize"))
 
 		var invoice Invoice
 		err := json.NewDecoder(r.Body).Decode(&invoice)
-		require.NoError(t, err)
-		require.Equal(t, "2026-01-01", invoice.VoucherDate)
+		require.NoError(s.T(), err)
+		require.Equal(s.T(), "2026-01-01", invoice.VoucherDate)
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(CreateInvoiceResult{ID: "inv-1"})
 	})
 
-	client, _ := testClient(t, mux)
 	finalize := true
-	result, err := client.CreateInvoice(context.Background(), Invoice{
+	result, err := s.client.CreateInvoice(context.Background(), Invoice{
 		VoucherDate:   "2026-01-01",
 		TaxConditions: TaxConditionGross(),
 		ShippingTerms: ShippingTermNone(),
 		TotalPrice:    TotalPrice{Currency: "EUR"},
 	}, &finalize)
-	require.NoError(t, err)
-	require.Equal(t, "inv-1", result.ID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "inv-1", result.ID)
 }
 
-func TestGetInvoice(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/invoices/{id}", func(w http.ResponseWriter, r *http.Request) {
+func (s *WorkflowSuite) TestGetInvoice() {
+	s.mux.HandleFunc("GET /v1/invoices/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(InvoiceDetail{
 			ID:            r.PathValue("id"),
@@ -123,100 +137,23 @@ func TestGetInvoice(t *testing.T) {
 		})
 	})
 
-	client, _ := testClient(t, mux)
-	inv, err := client.GetInvoice(context.Background(), "inv-99")
-	require.NoError(t, err)
-	require.Equal(t, "open", inv.VoucherStatus)
+	inv, err := s.client.GetInvoice(context.Background(), "inv-99")
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "open", inv.VoucherStatus)
 }
 
-func TestListArticles(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/articles", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "SERVICE", r.URL.Query().Get("type"))
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(Page[ArticleDetail]{
-			Content:       []ArticleDetail{{ID: "a1", Title: "Consulting"}},
-			TotalElements: 1,
-		})
-	})
-
-	client, _ := testClient(t, mux)
-	result, err := client.ListArticles(context.Background(), ArticleFilter{Type: "SERVICE"})
-	require.NoError(t, err)
-	require.Len(t, result.Content, 1)
-	require.Equal(t, "Consulting", result.Content[0].Title)
-}
-
-func TestListCountries(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/countries", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode([]Country{
-			{CountryCode: "DE", CountryNameEN: "Germany", TaxClassification: "de"},
-			{CountryCode: "AT", CountryNameEN: "Austria", TaxClassification: "intraCommunity"},
-		})
-	})
-
-	client, _ := testClient(t, mux)
-	countries, err := client.ListCountries(context.Background())
-	require.NoError(t, err)
-	require.Len(t, countries, 2)
-	require.Equal(t, "DE", countries[0].CountryCode)
-}
-
-func TestAPIError(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/profile", func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message":"invalid token"}`))
-	})
-
-	client, _ := testClient(t, mux)
-	_, err := client.GetProfile(context.Background())
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "401")
-}
-
-func TestListVouchers(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /v1/voucherlist", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "salesinvoice", r.URL.Query().Get("voucherType"))
-
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(Page[VoucherListItem]{
-			Content: []VoucherListItem{
-				{VoucherID: "v1", VoucherType: "salesinvoice", TotalAmount: 119.0},
-			},
-			TotalElements: 1,
-		})
-	})
-
-	client, _ := testClient(t, mux)
-	result, err := client.ListVouchers(context.Background(), VoucherlistFilter{
-		VoucherType: "salesinvoice",
-	})
-	require.NoError(t, err)
-	require.Len(t, result.Content, 1)
-	require.Equal(t, "v1", result.Content[0].VoucherID)
-}
-
-func TestFinalizeDefault(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
-		require.Equal(t, "true", r.URL.Query().Get("finalize"), "should use config default")
-
+func (s *WorkflowSuite) TestFinalizeUsesConfigDefault() {
+	s.mux.HandleFunc("POST /v1/invoices", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "true", r.URL.Query().Get("finalize"), "should use config default")
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(CreateInvoiceResult{ID: "inv-default"})
 	})
 
-	srv := httptest.NewServer(mux)
-	t.Cleanup(srv.Close)
-
+	// Rebuild client with FinalizeInvoices=true to test the default.
 	cfg := Config{
 		APIToken:         "test-token",
-		BaseURL:          srv.URL,
+		BaseURL:          s.srv.URL,
 		UserAgent:        "test-agent",
 		HTTPTimeout:      5 * time.Second,
 		FinalizeInvoices: true,
@@ -229,6 +166,78 @@ func TestFinalizeDefault(t *testing.T) {
 		ShippingTerms: ShippingTermNone(),
 		TotalPrice:    TotalPrice{Currency: "EUR"},
 	}, nil)
-	require.NoError(t, err)
-	require.Equal(t, "inv-default", result.ID)
+	require.NoError(s.T(), err)
+	require.Equal(s.T(), "inv-default", result.ID)
+}
+
+// ---------- Articles ----------
+
+func (s *WorkflowSuite) TestListArticles() {
+	s.mux.HandleFunc("GET /v1/articles", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "SERVICE", r.URL.Query().Get("type"))
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Page[ArticleDetail]{
+			Content:       []ArticleDetail{{ID: "a1", Title: "Consulting"}},
+			TotalElements: 1,
+		})
+	})
+
+	result, err := s.client.ListArticles(context.Background(), ArticleFilter{Type: "SERVICE"})
+	require.NoError(s.T(), err)
+	require.Len(s.T(), result.Content, 1)
+	require.Equal(s.T(), "Consulting", result.Content[0].Title)
+}
+
+// ---------- Countries ----------
+
+func (s *WorkflowSuite) TestListCountries() {
+	s.mux.HandleFunc("GET /v1/countries", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode([]Country{
+			{CountryCode: "DE", CountryNameEN: "Germany", TaxClassification: "de"},
+			{CountryCode: "AT", CountryNameEN: "Austria", TaxClassification: "intraCommunity"},
+		})
+	})
+
+	countries, err := s.client.ListCountries(context.Background())
+	require.NoError(s.T(), err)
+	require.Len(s.T(), countries, 2)
+	require.Equal(s.T(), "DE", countries[0].CountryCode)
+}
+
+// ---------- Voucherlist ----------
+
+func (s *WorkflowSuite) TestListVouchers() {
+	s.mux.HandleFunc("GET /v1/voucherlist", func(w http.ResponseWriter, r *http.Request) {
+		require.Equal(s.T(), "salesinvoice", r.URL.Query().Get("voucherType"))
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(Page[VoucherListItem]{
+			Content: []VoucherListItem{
+				{VoucherID: "v1", VoucherType: "salesinvoice", TotalAmount: 119.0},
+			},
+			TotalElements: 1,
+		})
+	})
+
+	result, err := s.client.ListVouchers(context.Background(), VoucherlistFilter{
+		VoucherType: "salesinvoice",
+	})
+	require.NoError(s.T(), err)
+	require.Len(s.T(), result.Content, 1)
+	require.Equal(s.T(), "v1", result.Content[0].VoucherID)
+}
+
+// ---------- Error handling ----------
+
+func (s *WorkflowSuite) TestAPIErrorReturnsStatusCode() {
+	s.mux.HandleFunc("GET /v1/profile", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"message":"invalid token"}`))
+	})
+
+	_, err := s.client.GetProfile(context.Background())
+	require.Error(s.T(), err)
+	require.Contains(s.T(), err.Error(), "401")
 }
