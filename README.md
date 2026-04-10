@@ -31,6 +31,11 @@ Lexware Office is one of the most popular cloud accounting platforms in Germany.
 | `lexware_get_quotation` | Retrieve a single quotation by UUID |
 | `lexware_create_credit_note` | Create a credit note with line items and optional finalization |
 | `lexware_get_credit_note` | Retrieve a single credit note by UUID |
+| `lexware_list_vouchers` | List vouchers across all document types with type and status filters |
+| `lexware_create_delivery_note` | Create a delivery note with line items and optional finalization |
+| `lexware_get_delivery_note` | Retrieve a single delivery note by UUID |
+| `lexware_create_order_confirmation` | Create an order confirmation with line items and optional finalization |
+| `lexware_get_order_confirmation` | Retrieve a single order confirmation by UUID |
 | `lexware_list_countries` | List all countries with tax classifications |
 
 ## Prerequisites
@@ -81,7 +86,7 @@ make build
 |----------|----------|---------|-------------|
 | `LEXWARE_API_TOKEN` | Yes | -- | Your private Lexware API token |
 | `LEXWARE_BASE_URL` | No | `https://api.lexware.io` | API base URL |
-| `LEXWARE_USER_AGENT` | No | `lexware-office-mcp/0.2.0` | User-Agent header sent to Lexware |
+| `LEXWARE_USER_AGENT` | No | `lexware-office-mcp/<version>` | User-Agent header sent to Lexware (version is compiled in) |
 | `LEXWARE_FINALIZE_INVOICES` | No | `false` | Automatically finalize invoices, quotations, and credit notes on creation |
 
 All variables are passed as environment variables. When using Docker, the MCP client forwards them to the container automatically.
@@ -438,11 +443,11 @@ make release-snapshot  # Build without publishing
 
 ## Roadmap
 
-- [ ] Voucher and file upload workflows
+- [ ] Voucher file upload/download workflows
 - [ ] Event subscription support
-- [ ] Delivery note tools
-- [ ] Order confirmation tools
 - [ ] Dunning notice tools
+- [ ] Down payment invoice support
+- [ ] Recurring template retrieval
 - [ ] Integration tests with mock server
 
 ## Links

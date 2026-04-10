@@ -54,6 +54,7 @@ The repository follows the [golang-standards/project-layout](https://github.com/
 - `internal/lexware/types.go`: request/response types for all Lexware API resources
 - `internal/lexware/workflows.go`: typed API operations (CRUD) for each resource
 - `internal/lexware/config_test.go`: unit tests for configuration loading
+- `internal/version/version.go`: build-time version injection via ldflags
 - `internal/server/server.go`: MCP server setup and tool registration
 - `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
 - `build/package/docker/`: Dockerfiles for container image builds
@@ -89,6 +90,17 @@ The repository exposes these MCP tools:
 - `lexware_create_credit_note`
 - `lexware_get_credit_note`
 
+**Voucherlist:**
+- `lexware_list_vouchers`
+
+**Delivery Notes:**
+- `lexware_create_delivery_note`
+- `lexware_get_delivery_note`
+
+**Order Confirmations:**
+- `lexware_create_order_confirmation`
+- `lexware_get_order_confirmation`
+
 **Reference Data:**
 - `lexware_list_countries`
 
@@ -96,8 +108,10 @@ When adding or removing tools, update `README.md` and this file before committin
 
 ## Preferred Next Steps
 
-- Add voucher and file upload workflows
-- Add delivery note, order confirmation, and dunning tools
+- Add voucher file upload/download workflows
+- Add dunning notice tools
+- Add down payment invoice support
+- Add recurring template retrieval
 - Add event subscription support
 - Add integration tests with a mock HTTP server
 - Consider better error mapping and retry strategy for Lexware API failures
