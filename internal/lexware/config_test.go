@@ -34,8 +34,8 @@ func TestLoadConfigFromEnv_Defaults(t *testing.T) {
 	if cfg.BaseURL != defaultBaseURL {
 		t.Errorf("BaseURL = %q, want %q", cfg.BaseURL, defaultBaseURL)
 	}
-	if cfg.UserAgent != defaultUserAgent {
-		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, defaultUserAgent)
+	if cfg.UserAgent != defaultUserAgent() {
+		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, defaultUserAgent())
 	}
 	if cfg.HTTPTimeout != 30*time.Second {
 		t.Errorf("HTTPTimeout = %v, want %v", cfg.HTTPTimeout, 30*time.Second)
