@@ -51,28 +51,55 @@ The repository follows the [golang-standards/project-layout](https://github.com/
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
 - `internal/lexware/config.go`: environment-based configuration loading
 - `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling
+- `internal/lexware/types.go`: request/response types for all Lexware API resources
+- `internal/lexware/workflows.go`: typed API operations (CRUD) for each resource
+- `internal/lexware/config_test.go`: unit tests for configuration loading
 - `internal/server/server.go`: MCP server setup and tool registration
 - `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
 - `build/package/docker/`: Dockerfiles for container image builds
 - `example/`: ready-to-use MCP client configuration files for Claude, Cursor, Codex, and Windsurf
 - `.github/workflows/release.yml`: GitHub Actions workflow triggered by version tags
 
-## Current MVP Tool Surface
+## Current Tool Surface
 
-The repository currently exposes these MCP tools:
+The repository exposes these MCP tools:
 
+**Profile:**
 - `lexware_get_profile`
+
+**Contacts:**
 - `lexware_create_simple_contact`
+- `lexware_get_contact`
+- `lexware_list_contacts`
+
+**Invoices:**
 - `lexware_create_invoice`
+- `lexware_get_invoice`
+
+**Articles:**
+- `lexware_create_article`
+- `lexware_get_article`
+- `lexware_list_articles`
+
+**Quotations:**
+- `lexware_create_quotation`
+- `lexware_get_quotation`
+
+**Credit Notes:**
+- `lexware_create_credit_note`
+- `lexware_get_credit_note`
+
+**Reference Data:**
+- `lexware_list_countries`
 
 When adding or removing tools, update `README.md` and this file before committing.
 
 ## Preferred Next Steps
 
-- Add dedicated invoice operations beyond single-invoice retrieval
-- Add typed voucher and file workflows
-- Improve endpoint-specific request and response typing
-- Add tests for config loading, client behavior, and MCP tool handlers
+- Add voucher and file upload workflows
+- Add delivery note, order confirmation, and dunning tools
+- Add event subscription support
+- Add integration tests with a mock HTTP server
 - Consider better error mapping and retry strategy for Lexware API failures
 
 ## Release Process

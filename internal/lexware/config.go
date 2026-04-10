@@ -10,7 +10,7 @@ import (
 
 const (
 	defaultBaseURL   = "https://api.lexware.io"
-	defaultUserAgent = "lexware-office-mcp/0.1.0"
+	defaultUserAgent = "lexware-office-mcp/0.2.0"
 )
 
 type Config struct {

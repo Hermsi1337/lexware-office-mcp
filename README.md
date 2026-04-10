@@ -20,7 +20,18 @@ Lexware Office is one of the most popular cloud accounting platforms in Germany.
 |------|-------------|
 | `lexware_get_profile` | Fetch the Lexware Office profile for the configured API token |
 | `lexware_create_simple_contact` | Create a customer contact with a name and optional reference |
+| `lexware_get_contact` | Retrieve a single contact by UUID |
+| `lexware_list_contacts` | List contacts with filters for email, name, number, and customer/vendor role |
 | `lexware_create_invoice` | Create an invoice with line items, tax, and payment conditions |
+| `lexware_get_invoice` | Retrieve a single invoice by UUID with status, line items, and totals |
+| `lexware_create_article` | Create a product or service article with pricing |
+| `lexware_get_article` | Retrieve a single article by UUID |
+| `lexware_list_articles` | List articles with filters for article number, GTIN, and type |
+| `lexware_create_quotation` | Create a quotation with line items and optional finalization |
+| `lexware_get_quotation` | Retrieve a single quotation by UUID |
+| `lexware_create_credit_note` | Create a credit note with line items and optional finalization |
+| `lexware_get_credit_note` | Retrieve a single credit note by UUID |
+| `lexware_list_countries` | List all countries with tax classifications |
 
 ## Prerequisites
 
@@ -70,8 +81,8 @@ make build
 |----------|----------|---------|-------------|
 | `LEXWARE_API_TOKEN` | Yes | -- | Your private Lexware API token |
 | `LEXWARE_BASE_URL` | No | `https://api.lexware.io` | API base URL |
-| `LEXWARE_USER_AGENT` | No | `lexware-office-mcp/0.1.0` | User-Agent header sent to Lexware |
-| `LEXWARE_FINALIZE_INVOICES` | No | `false` | Automatically finalize invoices on creation |
+| `LEXWARE_USER_AGENT` | No | `lexware-office-mcp/0.2.0` | User-Agent header sent to Lexware |
+| `LEXWARE_FINALIZE_INVOICES` | No | `false` | Automatically finalize invoices, quotations, and credit notes on creation |
 
 All variables are passed as environment variables. When using Docker, the MCP client forwards them to the container automatically.
 
@@ -309,6 +320,19 @@ Once connected, your AI assistant can call the following tools.
 }
 ```
 
+### List contacts
+
+```json
+{
+  "name": "lexware_list_contacts",
+  "arguments": {
+    "name": "Mustermann",
+    "customer": true,
+    "page": 0
+  }
+}
+```
+
 ### Create an invoice
 
 ```json
@@ -350,6 +374,36 @@ Once connected, your AI assistant can call the following tools.
 }
 ```
 
+### Create an article
+
+```json
+{
+  "name": "lexware_create_article",
+  "arguments": {
+    "article": {
+      "title": "Consulting Hour",
+      "type": "SERVICE",
+      "unitName": "hour",
+      "price": {
+        "netPrice": 100.0,
+        "grossPrice": 119.0,
+        "leadingPrice": "NET",
+        "taxRate": 19
+      }
+    }
+  }
+}
+```
+
+### List countries
+
+```json
+{
+  "name": "lexware_list_countries",
+  "arguments": {}
+}
+```
+
 ## Project Structure
 
 Follows the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) convention:
@@ -369,8 +423,8 @@ example/                            # Ready-to-use MCP client configs
 Releases are automated via [GoReleaser](https://goreleaser.com/) and GitHub Actions. Push a tag to trigger a release:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.2.0
+git push origin v0.2.0
 ```
 
 This builds multi-platform binaries, creates a GitHub Release, and pushes multi-arch Docker images to `ghcr.io/hermsi1337/lexware-office-mcp`.
@@ -384,11 +438,12 @@ make release-snapshot  # Build without publishing
 
 ## Roadmap
 
-- [ ] More contact operations (list, get, update)
-- [ ] Article management tools
-- [ ] Voucher and file workflows
+- [ ] Voucher and file upload workflows
 - [ ] Event subscription support
-- [ ] Unit and integration tests
+- [ ] Delivery note tools
+- [ ] Order confirmation tools
+- [ ] Dunning notice tools
+- [ ] Integration tests with mock server
 
 ## Links
 

@@ -48,7 +48,7 @@ func TestLoadConfigFromEnv_Defaults(t *testing.T) {
 func TestLoadConfigFromEnv_CustomValues(t *testing.T) {
 	t.Setenv("LEXWARE_API_TOKEN", "custom-token")
 	t.Setenv("LEXWARE_BASE_URL", "https://custom.api.test/")
-	t.Setenv("LEXWARE_USER_AGENT", "my-agent/1.0")
+	t.Setenv("LEXWARE_USER_AGENT", "my-agent/2.0")
 	t.Setenv("LEXWARE_FINALIZE_INVOICES", "true")
 
 	cfg, err := LoadConfigFromEnv()
@@ -63,8 +63,8 @@ func TestLoadConfigFromEnv_CustomValues(t *testing.T) {
 	if cfg.BaseURL != "https://custom.api.test" {
 		t.Errorf("BaseURL = %q, want %q", cfg.BaseURL, "https://custom.api.test")
 	}
-	if cfg.UserAgent != "my-agent/1.0" {
-		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, "my-agent/1.0")
+	if cfg.UserAgent != "my-agent/2.0" {
+		t.Errorf("UserAgent = %q, want %q", cfg.UserAgent, "my-agent/2.0")
 	}
 	if !cfg.FinalizeInvoices {
 		t.Error("FinalizeInvoices should be true when env is 'true'")
