@@ -40,6 +40,10 @@ func (s *Server) registerTools() {
 	s.registerDeliveryNoteTools()
 	s.registerOrderConfirmationTools()
 	s.registerCountryTools()
+	s.registerPaymentConditionTools()
+	s.registerPostingCategoryTools()
+	s.registerDownPaymentInvoiceTools()
+	s.registerRecurringTemplateTools()
 }
 
 func (s *Server) workflowResult(action string, result any, err error) (*mcp.CallToolResult, map[string]any, error) {
