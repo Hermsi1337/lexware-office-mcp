@@ -62,3 +62,10 @@ func (c *Client) FinalizeInvoices() bool {
 func (c *Client) newRequest(ctx context.Context) *resty.Request {
 	return c.restClient.R().SetContext(ctx)
 }
+
+func (c *Client) resolveFinalize(value *bool) bool {
+	if value != nil {
+		return *value
+	}
+	return c.finalizeInvoices
+}
