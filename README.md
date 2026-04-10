@@ -36,7 +36,11 @@ Lexware Office is one of the most popular cloud accounting platforms in Germany.
 | `lexware_get_delivery_note` | Retrieve a single delivery note by UUID |
 | `lexware_create_order_confirmation` | Create an order confirmation with line items and optional finalization |
 | `lexware_get_order_confirmation` | Retrieve a single order confirmation by UUID |
+| `lexware_get_down_payment_invoice` | Retrieve a single down payment invoice by UUID |
+| `lexware_get_recurring_template` | Retrieve a recurring invoice template by UUID |
 | `lexware_list_countries` | List all countries with tax classifications |
+| `lexware_list_payment_conditions` | List all payment condition presets (e.g. Net 30, Immediate) |
+| `lexware_list_posting_categories` | List all posting categories for voucher bookkeeping |
 
 ### Search and Filter Capabilities
 
@@ -427,8 +431,15 @@ Follows the [golang-standards/project-layout](https://github.com/golang-standard
 
 ```
 cmd/lexware-office-mcp/              # Application entrypoint
-internal/lexware/                    # API client, config, types, workflows
-internal/server/                     # MCP server and tool registration
+internal/lexware/                    # API client, per-resource types and workflows
+  common_types.go                    #   Shared types (Page, Address, LineItem, etc.)
+  {resource}_types.go                #   Per-resource type definitions
+  {resource}.go                      #   Per-resource Client methods
+  {resource}_test.go                 #   Per-resource test suites
+internal/server/                     # MCP server, per-resource handlers
+  server.go                          #   Server shell and tool dispatcher
+  {resource}.go                      #   Per-resource input types and handlers
+internal/version/                    # Build-time version injection
 build/goreleaser/.goreleaser.yml     # GoReleaser configuration
 build/package/docker/                # Dockerfiles
 example/                            # Ready-to-use MCP client configs
@@ -458,9 +469,6 @@ make release-snapshot  # Build without publishing
 - [ ] Voucher file upload/download workflows
 - [ ] Event subscription support
 - [ ] Dunning notice tools
-- [ ] Down payment invoice support
-- [ ] Recurring template retrieval
-- [ ] Integration tests with mock server
 
 ## Links
 

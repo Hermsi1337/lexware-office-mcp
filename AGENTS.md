@@ -57,13 +57,16 @@ If the code changes behavior, setup, scope, supported tools, constraints, or con
 The repository follows the [golang-standards/project-layout](https://github.com/golang-standards/project-layout) convention:
 
 - `cmd/lexware-office-mcp/main.go`: application entrypoint
+- `internal/lexware/client.go`: authenticated Lexware HTTP client with 429 retry handling
 - `internal/lexware/config.go`: environment-based configuration loading
-- `internal/lexware/client.go`: authenticated Lexware HTTP client built on resty with 429 retry handling
-- `internal/lexware/types.go`: request/response types for all Lexware API resources
-- `internal/lexware/workflows.go`: typed API operations (CRUD) for each resource
-- `internal/lexware/config_test.go`: unit tests for configuration loading
+- `internal/lexware/common_types.go`: shared types (Page, Address, LineItem, TotalPrice, etc.)
+- `internal/lexware/{resource}_types.go`: per-resource type definitions
+- `internal/lexware/{resource}.go`: per-resource Client methods, filters, result types
+- `internal/lexware/{resource}_test.go`: per-resource test suites
+- `internal/lexware/test_helpers_test.go`: shared baseSuite for httptest server lifecycle
 - `internal/version/version.go`: build-time version injection via ldflags
-- `internal/server/server.go`: MCP server setup and tool registration
+- `internal/server/server.go`: MCP server shell (Server struct, constructor, result helper)
+- `internal/server/{resource}.go`: per-resource input types, handlers, tool registration
 - `build/goreleaser/.goreleaser.yml`: GoReleaser configuration for multi-platform releases
 - `build/package/docker/`: Dockerfiles for container image builds
 - `example/`: ready-to-use MCP client configuration files for Claude, Cursor, Codex, and Windsurf
@@ -109,8 +112,16 @@ The repository exposes these MCP tools:
 - `lexware_create_order_confirmation`
 - `lexware_get_order_confirmation`
 
+**Down Payment Invoices:**
+- `lexware_get_down_payment_invoice`
+
+**Recurring Templates:**
+- `lexware_get_recurring_template`
+
 **Reference Data:**
 - `lexware_list_countries`
+- `lexware_list_payment_conditions`
+- `lexware_list_posting_categories`
 
 When adding or removing tools, update `README.md` and this file before committing.
 
@@ -118,10 +129,7 @@ When adding or removing tools, update `README.md` and this file before committin
 
 - Add voucher file upload/download workflows
 - Add dunning notice tools
-- Add down payment invoice support
-- Add recurring template retrieval
 - Add event subscription support
-- Add integration tests with a mock HTTP server
 - Consider better error mapping and retry strategy for Lexware API failures
 
 ## Release Process
