@@ -13,7 +13,7 @@ import (
 const defaultBaseURL = "https://api.lexware.io"
 
 func defaultUserAgent() string {
-	return "lexware-office-mcp/" + version.Version
+	return "github.com/Hermsi1337/lexware-office-mcp/" + version.Version
 }
 
 type Config struct {
